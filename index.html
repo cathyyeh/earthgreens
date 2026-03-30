@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>春綠 Earth Greens｜內部銷售與庫存儀表板（v24）</title>
+<title>春綠 Earth Greens｜內部銷售與庫存儀表板（v25）</title>
 <style>
 :root {--bg:#f4f0eb;--panel:#fff;--text:#2f241f;--muted:#7a6a61;--line:#d9cfc6;--brand:#9b5a5a;}
 *{box-sizing:border-box}
@@ -40,7 +40,7 @@ th{background:#faf8f6;position:sticky;top:0}
 <div class="container">
 <section class="hero">
 <h1>春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
-<p>已修正庫存邏輯：像「紫蘇茶包 - 2025/9/30製成,2026/2/5月入庫3535」這種帶日期備註的品名，仍會併入紫蘇茶包庫存。</p>
+<p>已排除品項中的「總計」。</p>
 <div class="tags">
 <span class="tag">內部共用版</span>
 <span class="tag">離線可用</span>
@@ -56,8 +56,7 @@ th{background:#faf8f6;position:sticky;top:0}
     <div><strong>1. 篩選方式：</strong>可用上方開始日期、結束日期、品項來篩選資料，所有 KPI、圖表與表格都會同步更新。</div>
     <div><strong>2. 庫存來源：</strong>本頁庫存數量依 Excel 檔中的「即期庫存」欄位計算。</div>
     <div><strong>3. 紫蘇茶分類：</strong>所有入數／盒裝／無盒／單包 → 紫蘇茶包；150g / 300g / 茶葉 → 紫蘇茶葉；紫蘇梗相關 → 紫蘇梗茶包。</div>
-    <div><strong>4. 庫存備註修正：</strong>帶日期或入庫備註但主體品名明確的庫存列，會保留並歸入對應正式品項。</div>
-    <div><strong>5. 已排除項目：</strong>已排除明顯非商品列，如「品名」「吉安農會暫存品」「B70 P80」「總計」等。</div>
+    <div><strong>4. 已排除項目：</strong>已排除「品名」「吉安農會暫存品」「B70 P80」「總計」及明顯非商品列。</div>
   </div>
 </div>
 
