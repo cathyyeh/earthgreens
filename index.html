@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>春綠 Earth Greens｜內部銷售與庫存儀表板（離線版）</title>
+<style>
+:root {--bg:#f4f0eb;--panel:#fff;--text:#2f241f;--muted:#7a6a61;--line:#d9cfc6;--brand:#9b5a5a;}
+*{box-sizing:border-box}
+body{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",Arial,sans-serif;margin:0;color:var(--text);background:var(--bg)}
+.container{max-width:1320px;margin:0 auto;padding:24px}
+.hero,.panel,.card{background:var(--panel);border-radius:20px;padding:18px;box-shadow:0 10px 28px rgba(70,55,44,.08)}
+.hero{margin-bottom:18px}
+.filters,.grid{display:grid;gap:16px}
+.filters{grid-template-columns:1fr 1fr 1fr auto;margin-bottom:18px}
+.grid{grid-template-columns:repeat(4,1fr);margin-bottom:18px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select,button{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--text)}
+button{background:linear-gradient(135deg,var(--brand),#b27373);color:#fff;border:none;cursor:pointer;margin-top:18px}
+.kpi-title{color:var(--muted);font-size:13px;margin-bottom:10px}
+.kpi-value{font-size:30px;font-weight:700}
+.kpi-note{margin-top:10px;color:var(--brand);font-size:12px}
+.tags{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.tag{padding:8px 12px;border-radius:999px;background:#f8efef;color:var(--brand);font-size:13px;font-weight:600}
+.chartbox{width:100%;height:360px}
+.chartbox svg{width:100%;height:100%;display:block}
+.label{fill:#6b7280;font-size:12px}
+.bar{fill:#b27373}
+.line{fill:none;stroke:#9b5a5a;stroke-width:3}
+.dot{fill:#9b5a5a}
+.scroll{max-height:420px;overflow:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 8px;border-bottom:1px solid #eadfd6;text-align:left;font-size:14px}
+th{background:#faf8f6;position:sticky;top:0}
+.footer-note{color:var(--muted);font-size:12px;text-align:center;padding:8px 0 20px}
+@media (max-width:900px){.filters{grid-template-columns:1fr} .grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<section class="hero">
+<h1>春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
+<p>公司內部共用版本。此頁面為單檔離線可分享版，不依賴外部網路，可直接提供給同事開啟使用。</p>
+<div class="tags">
+<span class="tag">內部共用版</span>
+<span class="tag">離線可用</span>
+<span class="tag">季度營收</span>
+<span class="tag">季度件數</span>
+<span class="tag">即期庫存</span>
+</div>
+</section>
+
+<div class="panel" style="margin-bottom:18px;">
+  <h3>使用說明</h3>
+  <div style="color:#7a6a61; line-height:1.8; font-size:14px;">
+    <div><strong>1. 篩選方式：</strong>可用上方開始日期、結束日期、品項來篩選資料，所有 KPI、圖表與表格都會同步更新。</div>
+    <div><strong>2. 庫存來源：</strong>本頁庫存數量依 Excel 檔中的「即期庫存」欄位計算。</div>
+    <div><strong>3. 品項整理規則：</strong>紫蘇茶不分包裝合併；茶包＋保養品組合獨立；所有福袋匯總為一項。</div>
+    <div><strong>4. 已排除項目：</strong>已排除日期／月份／年份類假品項，以及「品名」「吉安農會暫存品」「B70 P80」。</div>
+  </div>
+</div>
+
+<div class="filters">
+  <div><label>開始日期</label><input type="date" id="startDate"></div>
+  <div><label>結束日期</label><input type="date" id="endDate"></div>
+  <div><label>品項</label><select id="productFilter"><option value="">全部品項</option></select></div>
+  <div><button id="resetBtn">重設篩選</button></div>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="kpi-title">營收</div><div class="kpi-value" id="kpiRevenue">0</div><div class="kpi-note">銷售資料彙總</div></div>
+  <div class="card"><div class="kpi-title">訂單筆數</div><div class="kpi-value" id="kpiOrders">0</div><div class="kpi-note">依目前篩選條件</div></div>
+  <div class="card"><div class="kpi-title">銷售件數</div><div class="kpi-value" id="kpiQty">0</div><div class="kpi-note">可用日期／品項篩選</div></div>
+  <div class="card"><div class="kpi-title">庫存量（即期庫存）</div><div class="kpi-value" id="kpiInv">0</div><div class="kpi-note">依 Excel 即期庫存欄位</div></div>
+</div>
+
+<div class="panel" style="margin-bottom:18px;"><h3>每日銷售趨勢</h3><div id="salesChart" class="chartbox"></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>熱銷品項</h3><div id="topChart" class="chartbox"></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>季度銷售分析</h3><div id="quarterChart" class="chartbox"></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>季度銷售件數</h3><div id="quarterQtyChart" class="chartbox"></div></div>
+
+<div class="panel" style="margin-bottom:18px;">
+  <h3>銷售 × 庫存彙總</h3>
+  <div class="scroll">
+    <table id="summaryTable">
+      <thead><tr><th>品項</th><th>營收</th><th>銷售件數</th><th>訂單筆數</th><th>庫存量</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>庫存彙總</h3>
+  <div class="scroll">
+    <table id="inventoryTable">
+      <thead><tr><th>品項</th><th>庫存量</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="footer-note">春綠 Earth Greens 內部共用版本｜單檔離線版，可直接分享給同事使用。</div>
+</div>
+
+<script>
+const salesData = [{"date_str": "2025-09-29", "product": "紫蘇茶", "qty": 1.0, "amount": 498.0}, {"date_str": "2025-09-30", "product": "中秋✦提袋組✦20入", "qty": 2.0, "amount": 1700.0}, {"date_str": "2025-09-30", "product": "紫蘇茶＋保養品組合", "qty": 6.0, "amount": 5016.0}, {"date_str": "2025-09-30", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 2698.0}, {"date_str": "2025-09-30", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-01", "product": "紫蘇茶", "qty": 1.0, "amount": 1995.0}, {"date_str": "2025-10-01", "product": "紫蘇茶", "qty": 1.0, "amount": 3800.0}, {"date_str": "2025-10-02", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 1560.0}, {"date_str": "2025-10-03", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1024.0}, {"date_str": "2025-10-04", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 1326.0}, {"date_str": "2025-10-04", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 2737.0}, {"date_str": "2025-10-04", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-04", "product": "紫蘇茶", "qty": 2.0, "amount": 0.0}, {"date_str": "2025-10-04", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1666.0}, {"date_str": "2025-10-05", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1666.0}, {"date_str": "2025-10-05", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 3462.0}, {"date_str": "2025-10-05", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-05", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-05", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-05", "product": "紫蘇。潔顏液", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-05", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 903.0}, {"date_str": "2025-10-07", "product": "紫蘇茶", "qty": 1.0, "amount": 3130.0}, {"date_str": "2025-10-08", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 3980.0}, {"date_str": "2025-10-08", "product": "紫蘇。潤澤凝露", "qty": 2.0, "amount": 0.0}, {"date_str": "2025-10-08", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-08", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1666.0}, {"date_str": "2025-10-08", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-08", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1666.0}, {"date_str": "2025-10-08", "product": "紫蘇茶", "qty": 1.0, "amount": 4199.0}, {"date_str": "2025-10-08", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-08", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-08", "product": "紫蘇。潔顏液", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-09", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 1496.0}, {"date_str": "2025-10-09", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-09", "product": "紫蘇。植萃純露", "qty": 3.0, "amount": 1989.0}, {"date_str": "2025-10-09", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 2584.0}, {"date_str": "2025-10-09", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-09", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-10", "product": "紫蘇。植萃純露", "qty": 3.0, "amount": 1989.0}, {"date_str": "2025-10-10", "product": "紫蘇茶", "qty": 1.0, "amount": 3360.0}, {"date_str": "2025-10-10", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-10", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-10", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-10", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-11", "product": "紫蘇茶", "qty": 1.0, "amount": 1065.0}, {"date_str": "2025-10-12", "product": "紫蘇。潔顏液", "qty": 2.0, "amount": 5420.0}, {"date_str": "2025-10-12", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 0.0}, {"date_str": "2025-10-12", "product": "紫蘇。潤澤凝露", "qty": 2.0, "amount": 0.0}, {"date_str": "2025-10-12", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-12", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 3264.0}, {"date_str": "2025-10-12", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-12", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-12", "product": "紫蘇。潔顏液", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-12", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1666.0}, {"date_str": "2025-10-12", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 1326.0}, {"date_str": "2025-10-12", "product": "紫蘇。潤澤凝露", "qty": 2.0, "amount": 2754.0}, {"date_str": "2025-10-12", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-20", "product": "紫蘇茶", "qty": 1.0, "amount": 3800.0}, {"date_str": "2025-10-20", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2025-10-26", "product": "紫蘇茶", "qty": 1.0, "amount": 2760.0}, {"date_str": "2025-10-26", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-10-27", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1960.0}, {"date_str": "2025-10-30", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1960.0}, {"date_str": "2025-10-30", "product": "紫蘇茶", "qty": 1.0, "amount": 1045.0}, {"date_str": "2025-11-03", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1001.0}, {"date_str": "2025-11-03", "product": "紫蘇茶", "qty": 1.0, "amount": 1786.0}, {"date_str": "2025-11-05", "product": "紫蘇。植萃純露", "qty": 3.0, "amount": 2340.0}, {"date_str": "2025-11-11", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 2413.0}, {"date_str": "2025-11-11", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-11-12", "product": "紫蘇。植萃純露", "qty": 3.0, "amount": 2340.0}, {"date_str": "2025-11-17", "product": "紫蘇茶", "qty": 1.0, "amount": 3800.0}, {"date_str": "2025-11-20", "product": "紫蘇茶＋保養品組合", "qty": 3.0, "amount": 4735.0}, {"date_str": "2025-11-20", "product": "紫蘇。潤澤凝露", "qty": 2.0, "amount": 0.0}, {"date_str": "2025-11-20", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-11-20", "product": "紫蘇茶", "qty": 5.0, "amount": 0.0}, {"date_str": "2025-11-29", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1980.0}, {"date_str": "2025-12-01", "product": "紫蘇茶", "qty": 1.0, "amount": 1995.0}, {"date_str": "2025-12-02", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1880.0}, {"date_str": "2025-12-05", "product": "紫蘇茶", "qty": 1.0, "amount": 3610.0}, {"date_str": "2025-12-07", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 2060.0}, {"date_str": "2025-12-07", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-12-14", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1960.0}, {"date_str": "2025-12-14", "product": "紫蘇茶", "qty": 1.0, "amount": 3010.0}, {"date_str": "2025-12-14", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 0.0}, {"date_str": "2025-12-20", "product": "紫蘇。植萃純露", "qty": 3.0, "amount": 2223.0}, {"date_str": "2025-12-22", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2025-12-24", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1001.0}, {"date_str": "2025-12-30", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 2413.0}, {"date_str": "2025-12-30", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-01", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 2081.0}, {"date_str": "2026-01-01", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-01", "product": "紫蘇茶", "qty": 2.0, "amount": 0.0}, {"date_str": "2026-01-03", "product": "紫蘇。潔顏液", "qty": 2.0, "amount": 1500.0}, {"date_str": "2026-01-04", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2026-01-05", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 910.0}, {"date_str": "2026-01-05", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 3458.0}, {"date_str": "2026-01-05", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-05", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2026-01-05", "product": "紫蘇茶", "qty": 1.0, "amount": 526.0}, {"date_str": "2026-01-06", "product": "紫蘇。潤澤凝露", "qty": 2.0, "amount": 2622.0}, {"date_str": "2026-01-06", "product": "紫蘇。潔顏液", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-06", "product": "紫蘇茶", "qty": 1.0, "amount": 550.0}, {"date_str": "2026-01-06", "product": "紫蘇茶", "qty": 1.0, "amount": 1000.0}, {"date_str": "2026-01-07", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 1330.0}, {"date_str": "2026-01-07", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-07", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2026-01-08", "product": "紫蘇茶", "qty": 1.0, "amount": 508.0}, {"date_str": "2026-01-11", "product": "紫蘇。潤澤凝露", "qty": 2.0, "amount": 1860.0}, {"date_str": "2026-01-11", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 1760.0}, {"date_str": "2026-01-11", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-11", "product": "紫蘇茶", "qty": 1.0, "amount": 1910.0}, {"date_str": "2026-01-11", "product": "紫蘇。植萃純露", "qty": 2.0, "amount": 0.0}, {"date_str": "2026-01-11", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 2160.0}, {"date_str": "2026-01-11", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-01-12", "product": "紫蘇茶", "qty": 1.0, "amount": 550.0}, {"date_str": "2026-01-15", "product": "紫蘇茶", "qty": 1.0, "amount": 1995.0}, {"date_str": "2026-01-15", "product": "紫蘇茶", "qty": 1.0, "amount": 3496.0}, {"date_str": "2026-01-17", "product": "紫蘇茶", "qty": 1.0, "amount": 1880.0}, {"date_str": "2026-01-18", "product": "紫蘇茶", "qty": 1.0, "amount": 1786.0}, {"date_str": "2026-01-23", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1200.0}, {"date_str": "2026-01-26", "product": "紫蘇茶", "qty": 1.0, "amount": 3800.0}, {"date_str": "2026-01-29", "product": "紫蘇茶", "qty": 1.0, "amount": 2100.0}, {"date_str": "2026-02-02", "product": "紫蘇茶", "qty": 1.0, "amount": 3080.0}, {"date_str": "2026-02-02", "product": "紫蘇。潤澤凝露", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-05", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1862.0}, {"date_str": "2026-02-05", "product": "紫蘇茶", "qty": 3.0, "amount": 0.0}, {"date_str": "2026-02-06", "product": "紫蘇茶", "qty": 1.0, "amount": 920.0}, {"date_str": "2026-02-06", "product": "紫蘇茶", "qty": 2.0, "amount": 1700.0}, {"date_str": "2026-02-06", "product": "紫蘇茶", "qty": 3.0, "amount": 0.0}, {"date_str": "2026-02-08", "product": "紫蘇茶", "qty": 1.0, "amount": 1045.0}, {"date_str": "2026-02-08", "product": "紫蘇茶", "qty": 3.0, "amount": 0.0}, {"date_str": "2026-02-12", "product": "紫蘇茶", "qty": 1.0, "amount": 2100.0}, {"date_str": "2026-02-12", "product": "紫蘇茶", "qty": 3.0, "amount": 0.0}, {"date_str": "2026-02-12", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 1672.0}, {"date_str": "2026-02-12", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-12", "product": "紫蘇茶", "qty": 3.0, "amount": 0.0}, {"date_str": "2026-02-12", "product": "紫蘇茶", "qty": 3.0, "amount": 0.0}, {"date_str": "2026-02-13", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2026-02-13", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-17", "product": "紫蘇茶＋保養品組合", "qty": 15.0, "amount": 22260.0}, {"date_str": "2026-02-17", "product": "紫蘇茶＋保養品組合", "qty": 5.0, "amount": 0.0}, {"date_str": "2026-02-17", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-17", "product": "紫蘇茶", "qty": 1.0, "amount": 2100.0}, {"date_str": "2026-02-27", "product": "福袋", "qty": 1.0, "amount": 1200.0}, {"date_str": "2026-02-27", "product": "福袋", "qty": 1.0, "amount": 1200.0}, {"date_str": "2026-02-27", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-27", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1960.0}, {"date_str": "2026-02-27", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-28", "product": "福袋", "qty": 1.0, "amount": 1600.0}, {"date_str": "2026-02-28", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-02-28", "product": "福袋", "qty": 1.0, "amount": 1200.0}, {"date_str": "2026-02-28", "product": "紫蘇茶", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-03-01", "product": "福袋", "qty": 1.0, "amount": 1600.0}, {"date_str": "2026-03-02", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2026-03-02", "product": "福袋", "qty": 1.0, "amount": 1988.0}, {"date_str": "2026-03-03", "product": "福袋", "qty": 1.0, "amount": 1600.0}, {"date_str": "2026-03-04", "product": "福袋", "qty": 1.0, "amount": 1600.0}, {"date_str": "2026-03-04", "product": "紫蘇茶", "qty": 1.0, "amount": 498.0}, {"date_str": "2026-03-04", "product": "紫蘇茶", "qty": 1.0, "amount": 1000.0}, {"date_str": "2026-03-05", "product": "紫蘇茶＋保養品組合", "qty": 2.0, "amount": 1862.0}, {"date_str": "2026-03-07", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 2576.0}, {"date_str": "2026-03-07", "product": "福袋", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-03-07", "product": "紫蘇。植萃純露", "qty": 1.0, "amount": 0.0}, {"date_str": "2026-03-07", "product": "紫蘇茶", "qty": 1.0, "amount": 980.0}, {"date_str": "2026-03-07", "product": "紫蘇茶", "qty": 1.0, "amount": 1045.0}, {"date_str": "2026-03-12", "product": "紫蘇茶", "qty": 1.0, "amount": 1880.0}, {"date_str": "2026-03-13", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1216.0}, {"date_str": "2026-03-16", "product": "紫蘇茶", "qty": 1.0, "amount": 1100.0}, {"date_str": "2026-03-17", "product": "紫蘇茶", "qty": 1.0, "amount": 2100.0}, {"date_str": "2026-03-18", "product": "福袋", "qty": 1.0, "amount": 1600.0}, {"date_str": "2026-03-20", "product": "紫蘇茶", "qty": 1.0, "amount": 3800.0}, {"date_str": "2026-03-24", "product": "紫蘇。植萃純露", "qty": 3.0, "amount": 2340.0}, {"date_str": "2026-03-24", "product": "福袋", "qty": 1.0, "amount": 2900.0}, {"date_str": "2026-03-24", "product": "紫蘇茶", "qty": 2.0, "amount": 0.0}, {"date_str": "2026-03-28", "product": "紫蘇茶＋保養品組合", "qty": 1.0, "amount": 1001.0}, {"date_str": "2026-03-28", "product": "紫蘇茶", "qty": 1.0, "amount": 1045.0}];
+const inventoryData = [{"product": "乾燥紫蘇 (原料在製品)-公斤", "inventory_qty": 65.44}, {"product": "紫蘇植萃純露[100ml]", "inventory_qty": 171.0}, {"product": "紫蘇潔顏液[100ml]", "inventory_qty": 550.0}, {"product": "紫蘇潤澤凝露[100ml]", "inventory_qty": 603.0}, {"product": "紫蘇茶", "inventory_qty": 42650.0}, {"product": "紫蘇茶＋保養品組合", "inventory_qty": 822.0}, {"product": "總計", "inventory_qty": 2146.0}];
+const allProducts = ["中秋✦提袋組✦20入", "乾燥紫蘇 (原料在製品)-公斤", "福袋", "紫蘇。植萃純露", "紫蘇。潔顏液", "紫蘇。潤澤凝露", "紫蘇植萃純露[100ml]", "紫蘇潔顏液[100ml]", "紫蘇潤澤凝露[100ml]", "紫蘇茶", "紫蘇茶＋保養品組合", "總計"];
+
+const productFilter = document.getElementById('productFilter');
+const startDate = document.getElementById('startDate');
+const endDate = document.getElementById('endDate');
+const resetBtn = document.getElementById('resetBtn');
+
+allProducts.forEach(p => {
+  const o = document.createElement('option');
+  o.value = p; o.textContent = p; productFilter.appendChild(o);
+});
+
+const allDates = salesData.map(x => x.date_str).filter(Boolean).sort();
+if (allDates.length) {
+  startDate.value = allDates[0];
+  endDate.value = allDates[allDates.length - 1];
+}
+
+function fmtNum(n) { return Number(n || 0).toLocaleString(); }
+function fmtMoney(n) { return 'NT$ ' + Number(n || 0).toLocaleString(); }
+
+function getFiltered() {
+  const s = startDate.value || '';
+  const e = endDate.value || '';
+  const p = productFilter.value || '';
+  const sales = salesData.filter(r => (!s || r.date_str >= s) && (!e || r.date_str <= e) && (!p || r.product === p));
+  const inv = inventoryData.filter(r => (!p || r.product === p));
+  return { sales, inv };
+}
+
+function aggregate(filtered) {
+  const byDate = {}, byProduct = {}, byQuarter = {}, byQuarterQty = {};
+  filtered.sales.forEach(r => {
+    byDate[r.date_str] = (byDate[r.date_str] || 0) + Number(r.amount || 0);
+    if (!byProduct[r.product]) byProduct[r.product] = {product:r.product, amount:0, qty:0, orders:0, inventory_qty:0};
+    byProduct[r.product].amount += Number(r.amount || 0);
+    byProduct[r.product].qty += Number(r.qty || 0);
+    byProduct[r.product].orders += 1;
+    const parts = String(r.date_str || '').split('-');
+    const year = parts[0];
+    const month = Number(parts[1] || 0);
+    const quarter = month ? ('Q' + Math.floor((month - 1) / 3 + 1)) : 'Q?';
+    const key = year + ' ' + quarter;
+    byQuarter[key] = (byQuarter[key] || 0) + Number(r.amount || 0);
+    byQuarterQty[key] = (byQuarterQty[key] || 0) + Number(r.qty || 0);
+  });
+  filtered.inv.forEach(r => {
+    if (!byProduct[r.product]) byProduct[r.product] = {product:r.product, amount:0, qty:0, orders:0, inventory_qty:0};
+    byProduct[r.product].inventory_qty += Number(r.inventory_qty || 0);
+  });
+  const qk = Object.keys(byQuarter);
+  return {
+    dates: Object.keys(byDate).sort(),
+    amounts: Object.keys(byDate).sort().map(d => byDate[d]),
+    products: Object.values(byProduct).sort((a,b) => b.amount - a.amount),
+    quarters: qk,
+    quarterAmounts: qk.map(k => byQuarter[k]),
+    quarterQtys: qk.map(k => byQuarterQty[k] || 0)
+  };
+}
+
+function renderBarChart(el, labels, values) {
+  const w=900,h=360,m={t:20,r:20,b:30,l:180},cw=w-m.l-m.r,max=Math.max(...values,1);
+  const barH=Math.max(18,Math.min(28,(h-m.t-m.b)/Math.max(values.length,1)-6));
+  const gap=6; let bars='';
+  labels.forEach((lab,i)=>{
+    const y=m.t+i*(barH+gap); const bw=(values[i]/max)*cw;
+    bars += `<text x="${m.l-8}" y="${y+barH*0.7}" text-anchor="end" class="label">${lab}</text>`;
+    bars += `<rect class="bar" x="${m.l}" y="${y}" width="${bw}" height="${barH}" rx="4"></rect>`;
+    bars += `<text x="${m.l+bw+6}" y="${y+barH*0.7}" class="label">${fmtNum(values[i])}</text>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}">${bars}</svg>`;
+}
+
+function renderColumnChart(el, labels, values) {
+  const w=900,h=360,m={t:20,r:20,b:60,l:50},cw=w-m.l-m.r,ch=h-m.t-m.b,max=Math.max(...values,1);
+  const gap=cw/Math.max(values.length,1),bw=Math.max(24,gap*0.55);
+  let svg=`<line x1="${m.l}" y1="${h-m.b}" x2="${w-m.r}" y2="${h-m.b}" stroke="#ccc"/>`;
+  labels.forEach((lab,i)=>{
+    const x=m.l+i*gap+(gap-bw)/2; const bh=(values[i]/max)*ch; const y=h-m.b-bh;
+    svg += `<rect class="bar" x="${x}" y="${y}" width="${bw}" height="${bh}" rx="4"></rect>`;
+    svg += `<text x="${x+bw/2}" y="${h-m.b+18}" text-anchor="middle" class="label">${lab}</text>`;
+    svg += `<text x="${x+bw/2}" y="${y-6}" text-anchor="middle" class="label">${fmtNum(values[i])}</text>`;
+  });
+  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}">${svg}</svg>`;
+}
+
+function renderLineChart(el, labels, values) {
+  const w=900,h=360,m={t:20,r:20,b:60,l:50},cw=w-m.l-m.r,ch=h-m.t-m.b,max=Math.max(...values,1);
+  const stepX=labels.length>1?cw/(labels.length-1):0;
+  const pts=labels.map((lab,i)=>{const x=m.l+i*stepX; const y=m.t+ch-(values[i]/max)*ch; return [x,y,lab];});
+  let path=''; pts.forEach((p,i)=> path += (i?'L':'M') + p[0] + ',' + p[1]);
+  let svg=`<line x1="${m.l}" y1="${h-m.b}" x2="${w-m.r}" y2="${h-m.b}" stroke="#ccc"/><path d="${path}" class="line"/>`;
+  pts.forEach(p=>{ svg += `<circle class="dot" cx="${p[0]}" cy="${p[1]}" r="3"></circle>`; });
+  const tickEvery=Math.max(1,Math.ceil(labels.length/8));
+  pts.forEach((p,i)=>{ if(i%tickEvery===0||i===labels.length-1) svg += `<text x="${p[0]}" y="${h-m.b+18}" text-anchor="middle" class="label">${p[2]}</text>`; });
+  el.innerHTML = `<svg viewBox="0 0 ${w} ${h}">${svg}</svg>`;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const agg = aggregate(filtered);
+
+  document.getElementById('kpiRevenue').textContent = fmtMoney(filtered.sales.reduce((a,b)=>a+Number(b.amount||0),0));
+  document.getElementById('kpiOrders').textContent = fmtNum(filtered.sales.length);
+  document.getElementById('kpiQty').textContent = fmtNum(filtered.sales.reduce((a,b)=>a+Number(b.qty||0),0));
+  document.getElementById('kpiInv').textContent = fmtNum(filtered.inv.reduce((a,b)=>a+Number(b.inventory_qty||0),0));
+
+  renderLineChart(document.getElementById('salesChart'), agg.dates, agg.amounts);
+  const top = agg.products.slice(0,10);
+  renderBarChart(document.getElementById('topChart'), top.map(x=>x.product), top.map(x=>x.amount));
+  renderColumnChart(document.getElementById('quarterChart'), agg.quarters, agg.quarterAmounts);
+  renderColumnChart(document.getElementById('quarterQtyChart'), agg.quarters, agg.quarterQtys);
+
+  const tb = document.querySelector('#summaryTable tbody');
+  tb.innerHTML = '';
+  agg.products.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.product}</td><td>${fmtMoney(r.amount)}</td><td>${fmtNum(r.qty)}</td><td>${fmtNum(r.orders)}</td><td>${fmtNum(r.inventory_qty)}</td>`;
+    tb.appendChild(tr);
+  });
+
+  const itb = document.querySelector('#inventoryTable tbody');
+  itb.innerHTML = '';
+  filtered.inv.sort((a,b)=>b.inventory_qty-a.inventory_qty).forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.product}</td><td>${fmtNum(r.inventory_qty)}</td>`;
+    itb.appendChild(tr);
+  });
+}
+
+[startDate,endDate,productFilter].forEach(el=>el.addEventListener('change', render));
+resetBtn.addEventListener('click', ()=>{
+  if(allDates.length){ startDate.value = allDates[0]; endDate.value = allDates[allDates.length - 1]; }
+  productFilter.value = '';
+  render();
+});
+render();
+</script>
+</body>
+</html>
