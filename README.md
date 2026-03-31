@@ -1,11 +1,8 @@
-# Earth Greens Realtime Dashboard v29
+# Earth Greens Realtime Dashboard v30
 
-v29 支援：
-- Render PostgreSQL
-- 最後上傳檔名 / 時間顯示
-- 記住上次篩選條件（localStorage）
-- 保留 SQLite fallback
-
-## 啟動
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+v30 新增熟客分析：
+- 不重複客戶數
+- 前十大客戶
+- 最常購買品項
+- 總貢獻營收
+- PostgreSQL 支援
