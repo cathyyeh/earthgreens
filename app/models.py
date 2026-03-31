@@ -9,6 +9,11 @@ class SalesRecord(Base):
     normalized_product_name = Column(String, index=True)
     qty = Column(Float, default=0)
     amount = Column(Float, default=0)
+    customer_name = Column(String, index=True)
+    customer_phone = Column(String, index=True)
+    customer_email = Column(String, index=True)
+    order_status = Column(String, index=True)
+    payment_status = Column(String, index=True)
 
 class InventoryRecord(Base):
     __tablename__ = "inventory_records"

@@ -14,13 +14,19 @@ def find_col(cols, candidates):
 def import_files(db, order_file_path: str, inventory_file_path: str):
     sales_raw = pd.read_excel(order_file_path)
     sales_raw.columns = [str(c).strip() for c in sales_raw.columns]
-    date_col = find_col(sales_raw.columns, ["日期", "date", "下單", "created", "order"])
-    product_col = find_col(sales_raw.columns, ["品項", "商品", "product", "名稱", "品名"])
-    qty_col = find_col(sales_raw.columns, ["數量", "件數", "qty", "quantity"])
-    amount_col = find_col(sales_raw.columns, ["金額", "總額", "小計", "amount", "total", "營收"])
 
-    sales = sales_raw[[date_col, product_col, qty_col, amount_col]].copy()
-    sales.columns = ["date", "product_raw", "qty", "amount"]
+    date_col = find_col(sales_raw.columns, ["日期", "date", "下單", "created", "order", "購買日期"])
+    product_col = find_col(sales_raw.columns, ["品項", "商品", "product", "名稱", "品名", "訂購商品"])
+    qty_col = find_col(sales_raw.columns, ["數量", "件數", "qty", "quantity", "商品數量"])
+    amount_col = find_col(sales_raw.columns, ["金額", "總額", "小計", "amount", "total", "總金額"])
+    customer_name_col = find_col(sales_raw.columns, ["購買人", "客戶", "姓名", "收件人"])
+    customer_phone_col = find_col(sales_raw.columns, ["電話", "手機"])
+    customer_email_col = find_col(sales_raw.columns, ["電子郵件", "email", "e-mail"])
+    order_status_col = find_col(sales_raw.columns, ["訂單狀態"])
+    payment_status_col = find_col(sales_raw.columns, ["付款狀態"])
+
+    sales = sales_raw[[date_col, product_col, qty_col, amount_col, customer_name_col, customer_phone_col, customer_email_col, order_status_col, payment_status_col]].copy()
+    sales.columns = ["date", "product_raw", "qty", "amount", "customer_name", "customer_phone", "customer_email", "order_status", "payment_status"]
     sales["date"] = pd.to_datetime(sales["date"], errors="coerce")
     sales = sales.dropna(subset=["date", "product_raw"]).copy()
     sales["product_raw"] = sales["product_raw"].astype(str).str.strip()
@@ -30,6 +36,8 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
     sales["product"] = sales["product_raw"].map(normalize_product)
     sales = sales[sales["product"].notna()].copy()
     sales["date_str"] = sales["date"].dt.strftime("%Y-%m-%d")
+    for c in ["customer_name","customer_phone","customer_email","order_status","payment_status"]:
+        sales[c] = sales[c].astype(str).fillna("").str.strip()
 
     inv_raw = pd.read_excel(inventory_file_path, sheet_name="成品即時庫存", header=3)
     inv_raw.columns = [str(c).strip().replace("\n", "") for c in inv_raw.columns]
@@ -55,6 +63,11 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
             normalized_product_name=row["product"],
             qty=float(row["qty"]),
             amount=float(row["amount"]),
+            customer_name=row["customer_name"],
+            customer_phone=row["customer_phone"],
+            customer_email=row["customer_email"],
+            order_status=row["order_status"],
+            payment_status=row["payment_status"],
         ))
 
     grouped_inventory = inventory.groupby("product", as_index=False)["inventory_qty"].sum()
