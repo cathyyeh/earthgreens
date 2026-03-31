@@ -1,13 +1,11 @@
-# Earth Greens Realtime Dashboard v28
+# Earth Greens Realtime Dashboard v29
 
-v28 已支援真正可互動的日期與品項篩選。
+v29 支援：
+- Render PostgreSQL
+- 最後上傳檔名 / 時間顯示
+- 記住上次篩選條件（localStorage）
+- 保留 SQLite fallback
 
 ## 啟動
-```bash
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-```
-
-## 網址
-- Dashboard: http://127.0.0.1:8000/dashboard
-- Upload: http://127.0.0.1:8000/admin/upload
