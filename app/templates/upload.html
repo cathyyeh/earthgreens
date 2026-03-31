@@ -26,8 +26,8 @@ button { margin-top: 20px; padding: 10px 16px; background:#a96f6f; color:white; 
 {% if latest %}
 <hr>
 <div>最後更新時間：{{ latest.uploaded_at }}</div>
-<div>訂單檔案：{{ latest.order_file_name }}</div>
-<div>庫存檔案：{{ latest.inventory_file_name }}</div>
+<div>上次訂單報表：{{ latest.order_file_name }}</div>
+<div>上次庫存報表：{{ latest.inventory_file_name }}</div>
 {% endif %}
 </div>
 <p><a href="/dashboard">前往 Dashboard</a></p>

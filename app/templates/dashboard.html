@@ -33,9 +33,11 @@ th { background:#faf8f6; position:sticky; top:0; }
 <section class="hero">
 <h1>春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
 <p>最後更新：{{ latest.uploaded_at if latest else "尚未上傳資料" }}</p>
+{% if latest %}<p>上次訂單報表：{{ latest.order_file_name }} ｜ 上次庫存報表：{{ latest.inventory_file_name }}</p>{% endif %}
 <div class="tags">
 <span class="tag">內部共用版</span>
 <span class="tag">上傳即更新</span>
+<span class="tag">PostgreSQL 支援</span>
 <span class="tag">季度營收</span>
 <span class="tag">季度件數</span>
 <span class="tag">即期庫存</span>
@@ -45,18 +47,18 @@ th { background:#faf8f6; position:sticky; top:0; }
 <div class="panel" style="margin-bottom:18px;">
   <h3>使用說明</h3>
   <div style="color:#7a6a61; line-height:1.8; font-size:14px;">
-    <div><strong>1. 篩選方式：</strong>日期與品項篩選已可真正回傳後端重算。</div>
-    <div><strong>2. 庫存來源：</strong>本頁庫存數量依 Excel 檔中的「即期庫存」欄位計算。</div>
-    <div><strong>3. 品項規則：</strong>已內建紫蘇茶分類、保養品名稱對齊與總計排除規則。</div>
+    <div><strong>1. 篩選方式：</strong>日期與品項篩選可真正回傳後端重算。</div>
+    <div><strong>2. 記住篩選：</strong>瀏覽器會記住你上次選的開始日期、結束日期與品項。</div>
+    <div><strong>3. 資料保存：</strong>部署到 Render Postgres 後，不需要每次重新上傳。</div>
   </div>
 </div>
 
-<form method="get" action="/dashboard">
+<form method="get" action="/dashboard" id="filterForm">
 <div class="filters">
-  <div><label>開始日期</label><input type="date" name="start_date" value="{{ selected_start }}"></div>
-  <div><label>結束日期</label><input type="date" name="end_date" value="{{ selected_end }}"></div>
+  <div><label>開始日期</label><input type="date" name="start_date" id="start_date" value="{{ selected_start }}"></div>
+  <div><label>結束日期</label><input type="date" name="end_date" id="end_date" value="{{ selected_end }}"></div>
   <div><label>品項</label>
-    <select name="product">
+    <select name="product" id="product">
       <option value="">全部品項</option>
       {% for p in all_products %}
       <option value="{{ p }}" {% if p == selected_product %}selected{% endif %}>{{ p }}</option>
@@ -137,6 +139,22 @@ new Chart(document.getElementById('quarterQtyChart'), {
   type: 'bar',
   data: { labels: quarterLabels, datasets: [{ label: '季度件數', data: quarterQtyValues, backgroundColor: '#c28c8c' }] },
   options: { responsive: true, maintainAspectRatio: false }
+});
+
+const form = document.getElementById('filterForm');
+form.addEventListener('submit', () => {
+  localStorage.setItem('eg_start_date', document.getElementById('start_date').value);
+  localStorage.setItem('eg_end_date', document.getElementById('end_date').value);
+  localStorage.setItem('eg_product', document.getElementById('product').value);
+});
+
+window.addEventListener('load', () => {
+  const s = localStorage.getItem('eg_start_date');
+  const e = localStorage.getItem('eg_end_date');
+  const p = localStorage.getItem('eg_product');
+  if (!document.getElementById('start_date').value && s) document.getElementById('start_date').value = s;
+  if (!document.getElementById('end_date').value && e) document.getElementById('end_date').value = e;
+  if (!document.getElementById('product').value && p) document.getElementById('product').value = p;
 });
 </script>
 </body>
