@@ -12,10 +12,7 @@ def find_col(cols, candidates):
     return None
 
 def import_files(db, order_file_path: str, inventory_file_path: str):
-    order_path = Path(order_file_path)
-    inventory_path = Path(inventory_file_path)
-
-    sales_raw = pd.read_excel(order_path)
+    sales_raw = pd.read_excel(order_file_path)
     sales_raw.columns = [str(c).strip() for c in sales_raw.columns]
     date_col = find_col(sales_raw.columns, ["日期", "date", "下單", "created", "order"])
     product_col = find_col(sales_raw.columns, ["品項", "商品", "product", "名稱", "品名"])
@@ -70,8 +67,8 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
 
     db.add(UploadBatch(
         uploaded_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        order_file_name=order_path.name,
-        inventory_file_name=inventory_path.name,
+        order_file_name=Path(order_file_path).name,
+        inventory_file_name=Path(inventory_file_path).name,
         status="success"
     ))
     db.commit()

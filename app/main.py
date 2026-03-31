@@ -9,7 +9,7 @@ from .models import SalesRecord, InventoryRecord, UploadBatch
 from .importer import import_files
 
 Base.metadata.create_all(bind=engine)
-app = FastAPI(title="Earth Greens Dashboard v28")
+app = FastAPI(title="Earth Greens Dashboard v29")
 templates = Jinja2Templates(directory="app/templates")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -36,13 +36,7 @@ async def upload_files(request: Request, order_file: UploadFile = File(...), inv
     return templates.TemplateResponse("upload.html", {"request": request, "latest": latest, "message": "資料已更新成功"})
 
 @app.get("/dashboard", response_class=HTMLResponse)
-def dashboard(
-    request: Request,
-    start_date: str | None = Query(default=None),
-    end_date: str | None = Query(default=None),
-    product: str | None = Query(default=None),
-    db: Session = Depends(get_db)
-):
+def dashboard(request: Request, start_date: str | None = Query(default=None), end_date: str | None = Query(default=None), product: str | None = Query(default=None), db: Session = Depends(get_db)):
     all_sales = db.query(SalesRecord).all()
     all_inventory = db.query(InventoryRecord).all()
     latest = db.query(UploadBatch).order_by(UploadBatch.id.desc()).first()
@@ -55,17 +49,8 @@ def dashboard(
     if not end_date and all_dates:
         end_date = all_dates[-1]
 
-    sales = [
-        x for x in all_sales
-        if (not start_date or x.order_date >= start_date)
-        and (not end_date or x.order_date <= end_date)
-        and (not product or x.normalized_product_name == product)
-    ]
-
-    inventory = [
-        x for x in all_inventory
-        if (not product or x.normalized_product_name == product)
-    ]
+    sales = [x for x in all_sales if (not start_date or x.order_date >= start_date) and (not end_date or x.order_date <= end_date) and (not product or x.normalized_product_name == product)]
+    inventory = [x for x in all_inventory if (not product or x.normalized_product_name == product)]
 
     revenue = sum(x.amount for x in sales)
     qty = sum(x.qty for x in sales)
@@ -82,12 +67,9 @@ def dashboard(
         by_product[s.normalized_product_name]["amount"] += s.amount
         by_product[s.normalized_product_name]["qty"] += s.qty
         by_product[s.normalized_product_name]["orders"] += 1
-
-        parts = s.order_date.split("-")
-        year = parts[0]
-        month = int(parts[1])
-        quarter = f"Q{((month - 1) // 3) + 1}"
-        key = f"{year} {quarter}"
+        year, month = s.order_date.split("-")[0], int(s.order_date.split("-")[1])
+        q = f"Q{((month - 1) // 3) + 1}"
+        key = f"{year} {q}"
         by_quarter_amount[key] += s.amount
         by_quarter_qty[key] += s.qty
 
