@@ -1,8 +1,14 @@
-# Earth Greens Realtime Dashboard v30
+# Earth Greens Render Deployable v30.1
 
-v30 新增熟客分析：
-- 不重複客戶數
-- 前十大客戶
-- 最常購買品項
-- 總貢獻營收
-- PostgreSQL 支援
+Render-ready package:
+- Python 3.12.8
+- psycopg v3
+- pandas 2.2.2
+- SQLite fallback for local
+- Customer analysis dashboard
+
+Build:
+pip install -r requirements.txt
+
+Start:
+uvicorn app.main:app --host 0.0.0.0 --port 10000
