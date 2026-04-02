@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="zh-Hant"><head><meta charset="UTF-8"><title>Upload</title></head>
+<html lang="zh-Hant">
+<head><meta charset="UTF-8"><title>資料上傳</title></head>
 <body style="font-family:Arial;max-width:880px;margin:40px auto;padding:0 20px;background:#f7f4f1;">
 <h1>QDM 報表上傳頁</h1>
 <div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:24px;">
@@ -9,6 +10,13 @@
 <button type="submit" style="margin-top:20px;padding:10px 16px;background:#a96f6f;color:white;border:none;border-radius:8px;">更新 Dashboard</button>
 </form>
 {% if message %}<div style="margin-top:16px;color:green;">{{ message }}</div>{% endif %}
+{% if latest %}
+<hr>
+<div>最後更新時間：{{ latest.uploaded_at }}</div>
+<div>上次訂單報表：{{ latest.order_file_name }}</div>
+<div>上次庫存報表：{{ latest.inventory_file_name }}</div>
+{% endif %}
 </div>
 <p><a href="/dashboard">前往 Dashboard</a></p>
-</body></html>
+</body>
+</html>

@@ -1,52 +1,151 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8"><title>Earth Greens Dashboard</title>
+<meta charset="UTF-8">
+<title>Earth Greens Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; max-width: 1320px; margin: 0 auto; padding: 24px; background:#f4f0eb; color:#2f241f; }
+:root { --bg:#f4f0eb; --panel:#fff; --text:#2f241f; --muted:#7a6a61; --line:#d9cfc6; --brand:#9b5a5a; }
+* { box-sizing:border-box; }
+body { font-family: Arial, sans-serif; max-width: 1320px; margin: 0 auto; padding: 24px; background:var(--bg); color:var(--text); }
 .hero,.panel,.card { background:#fff; border-radius:20px; padding:18px; box-shadow:0 10px 28px rgba(70,55,44,.08); }
-.grid,.filters { display:grid; gap:16px; }
-.grid { grid-template-columns:repeat(4,1fr); margin-bottom:18px; }
+.hero { margin-bottom:18px; }
+.filters,.grid { display:grid; gap:16px; }
 .filters { grid-template-columns:1fr 1fr 1fr auto; margin-bottom:18px; }
+.grid { grid-template-columns:repeat(4,1fr); margin-bottom:18px; }
+label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+input,select,button { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--text); }
+button { background:linear-gradient(135deg,var(--brand),#b27373); color:#fff; border:none; cursor:pointer; margin-top:18px; }
+.kpi-title { color:var(--muted); font-size:13px; margin-bottom:10px; }
+.kpi-value { font-size:30px; font-weight:700; }
+.tags { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+.tag { padding:8px 12px; border-radius:999px; background:#f8efef; color:var(--brand); font-size:13px; font-weight:600; }
 .chartbox { width:100%; height:360px; }
-table { width:100%; border-collapse:collapse; }
-th,td { padding:10px 8px; border-bottom:1px solid #eadfd6; text-align:left; }
+table { width:100%; border-collapse: collapse; }
+th, td { padding:10px 8px; border-bottom:1px solid #eadfd6; text-align:left; font-size:14px; }
+th { background:#faf8f6; position:sticky; top:0; }
+.scroll { max-height:420px; overflow:auto; }
+@media (max-width:900px) { .filters { grid-template-columns:1fr; } .grid { grid-template-columns:1fr 1fr; } }
 </style>
 </head>
 <body>
 <section class="hero">
-<h1>春綠 Earth Greens｜Render 可部署版</h1>
+<h1>春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
 <p>最後更新：{{ latest.uploaded_at if latest else "尚未上傳資料" }}</p>
+{% if latest %}<p>上次訂單報表：{{ latest.order_file_name }} ｜ 上次庫存報表：{{ latest.inventory_file_name }}</p>{% endif %}
+<div class="tags">
+<span class="tag">熟客分析</span>
+<span class="tag">前十大客戶</span>
+<span class="tag">總貢獻營收</span>
+<span class="tag">最常購買品項</span>
+</div>
 </section>
 
-<form method="get" action="/dashboard">
+<form method="get" action="/dashboard" id="filterForm">
 <div class="filters">
-  <div><label>開始日期</label><input type="date" name="start_date" value="{{ selected_start }}"></div>
-  <div><label>結束日期</label><input type="date" name="end_date" value="{{ selected_end }}"></div>
-  <div><label>品項</label><select name="product"><option value="">全部品項</option>{% for p in all_products %}<option value="{{ p }}" {% if p == selected_product %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+  <div><label>開始日期</label><input type="date" name="start_date" id="start_date" value="{{ selected_start }}"></div>
+  <div><label>結束日期</label><input type="date" name="end_date" id="end_date" value="{{ selected_end }}"></div>
+  <div><label>品項</label>
+    <select name="product" id="product">
+      <option value="">全部品項</option>
+      {% for p in all_products %}
+      <option value="{{ p }}" {% if p == selected_product %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+  </div>
   <div><button type="submit">套用篩選</button></div>
 </div>
 </form>
 
 <div class="grid">
-  <div class="card"><div>營收</div><div style="font-size:30px;font-weight:700;">NT$ {{ "{:,.0f}".format(revenue) }}</div></div>
-  <div class="card"><div>訂單筆數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(orders) }}</div></div>
-  <div class="card"><div>銷售件數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(qty) }}</div></div>
-  <div class="card"><div>不重複客戶數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
+  <div class="card"><div class="kpi-title">營收</div><div class="kpi-value">NT$ {{ "{:,.0f}".format(revenue) }}</div></div>
+  <div class="card"><div class="kpi-title">訂單筆數</div><div class="kpi-value">{{ "{:,.0f}".format(orders) }}</div></div>
+  <div class="card"><div class="kpi-title">銷售件數</div><div class="kpi-value">{{ "{:,.0f}".format(qty) }}</div></div>
+  <div class="card"><div class="kpi-title">不重複客戶數</div><div class="kpi-value">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
 </div>
 
 <div class="panel" style="margin-bottom:18px;">
-<h3>熟客分析｜前十大客戶</h3>
-<table><thead><tr><th>客戶</th><th>識別值</th><th>訂單數</th><th>總件數</th><th>總營收</th><th>最常購買品項</th></tr></thead>
-<tbody>{% for c in top_customers %}<tr><td>{{ c.name }}</td><td>{{ c.identifier }}</td><td>{{ "{:,.0f}".format(c.orders) }}</td><td>{{ "{:,.0f}".format(c.qty) }}</td><td>{{ "{:,.0f}".format(c.revenue) }}</td><td>{{ c.favorite_product }}</td></tr>{% endfor %}</tbody></table>
+  <h3>熟客分析｜前十大客戶</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>客戶</th><th>識別值</th><th>訂單數</th><th>總件數</th><th>總營收</th><th>最常購買品項</th></tr></thead>
+      <tbody>
+      {% for c in top_customers %}
+        <tr>
+          <td>{{ c.name }}</td>
+          <td>{{ c.identifier }}</td>
+          <td>{{ "{:,.0f}".format(c.orders) }}</td>
+          <td>{{ "{:,.0f}".format(c.qty) }}</td>
+          <td>{{ "{:,.0f}".format(c.revenue) }}</td>
+          <td>{{ c.favorite_product }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <div class="panel" style="margin-bottom:18px;"><h3>每日銷售趨勢</h3><div class="chartbox"><canvas id="dailyChart"></canvas></div></div>
 <div class="panel" style="margin-bottom:18px;"><h3>季度銷售分析</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
+
+<div class="panel">
+  <h3>銷售 × 庫存彙總</h3>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>品項</th><th>營收</th><th>銷售件數</th><th>訂單筆數</th><th>庫存量</th></tr></thead>
+      <tbody>
+      {% for r in product_rows %}
+        <tr>
+          <td>{{ r.product }}</td>
+          <td>{{ "{:,.0f}".format(r.amount) }}</td>
+          <td>{{ "{:,.0f}".format(r.qty) }}</td>
+          <td>{{ "{:,.0f}".format(r.orders) }}</td>
+          <td>{{ "{:,.0f}".format(r.inventory_qty) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <script>
-new Chart(document.getElementById('dailyChart'), {type:'line', data:{labels: {{ daily_labels|tojson }}, datasets:[{label:'每日營收', data: {{ daily_values|tojson }}, borderColor:'#9b5a5a'}]}, options:{responsive:true, maintainAspectRatio:false}});
-new Chart(document.getElementById('quarterChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度營收', data: {{ quarter_values|tojson }}, backgroundColor:'#b27373'}]}, options:{responsive:true, maintainAspectRatio:false}});
+const dailyLabels = {{ daily_labels|tojson }};
+const dailyValues = {{ daily_values|tojson }};
+const quarterLabels = {{ quarter_labels|tojson }};
+const quarterValues = {{ quarter_values|tojson }};
+const quarterQtyValues = {{ quarter_qty_values|tojson }};
+
+new Chart(document.getElementById('dailyChart'), {
+  type: 'line',
+  data: { labels: dailyLabels, datasets: [{ label: '每日營收', data: dailyValues, borderColor: '#9b5a5a' }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('quarterChart'), {
+  type: 'bar',
+  data: { labels: quarterLabels, datasets: [{ label: '季度營收', data: quarterValues, backgroundColor: '#b27373' }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+new Chart(document.getElementById('quarterQtyChart'), {
+  type: 'bar',
+  data: { labels: quarterLabels, datasets: [{ label: '季度件數', data: quarterQtyValues, backgroundColor: '#c28c8c' }] },
+  options: { responsive: true, maintainAspectRatio: false }
+});
+
+const form = document.getElementById('filterForm');
+form.addEventListener('submit', () => {
+  localStorage.setItem('eg_start_date', document.getElementById('start_date').value);
+  localStorage.setItem('eg_end_date', document.getElementById('end_date').value);
+  localStorage.setItem('eg_product', document.getElementById('product').value);
+});
+window.addEventListener('load', () => {
+  const s = localStorage.getItem('eg_start_date');
+  const e = localStorage.getItem('eg_end_date');
+  const p = localStorage.getItem('eg_product');
+  if (!document.getElementById('start_date').value && s) document.getElementById('start_date').value = s;
+  if (!document.getElementById('end_date').value && e) document.getElementById('end_date').value = e;
+  if (!document.getElementById('product').value && p) document.getElementById('product').value = p;
+});
 </script>
-</body></html>
+</body>
+</html>
