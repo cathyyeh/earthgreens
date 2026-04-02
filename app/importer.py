@@ -23,7 +23,6 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
     customer_email_col = find_col(sales_raw.columns, ["電子郵件", "email", "e-mail"])
     order_status_col = find_col(sales_raw.columns, ["訂單狀態"])
     payment_status_col = find_col(sales_raw.columns, ["付款狀態"])
-
     sales = sales_raw[[date_col, product_col, qty_col, amount_col, customer_name_col, customer_phone_col, customer_email_col, order_status_col, payment_status_col]].copy()
     sales.columns = ["date", "product_raw", "qty", "amount", "customer_name", "customer_phone", "customer_email", "order_status", "payment_status"]
     sales["date"] = pd.to_datetime(sales["date"], errors="coerce")
