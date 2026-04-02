@@ -14,7 +14,6 @@ def find_col(cols, candidates):
 def import_files(db, order_file_path: str, inventory_file_path: str):
     sales_raw = pd.read_excel(order_file_path)
     sales_raw.columns = [str(c).strip() for c in sales_raw.columns]
-
     date_col = find_col(sales_raw.columns, ["日期", "date", "下單", "created", "order", "購買日期"])
     product_col = find_col(sales_raw.columns, ["品項", "商品", "product", "名稱", "品名", "訂購商品"])
     qty_col = find_col(sales_raw.columns, ["數量", "件數", "qty", "quantity", "商品數量"])
@@ -36,14 +35,13 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
     sales["product"] = sales["product_raw"].map(normalize_product)
     sales = sales[sales["product"].notna()].copy()
     sales["date_str"] = sales["date"].dt.strftime("%Y-%m-%d")
-    for c in ["customer_name", "customer_phone", "customer_email", "order_status", "payment_status"]:
+    for c in ["customer_name","customer_phone","customer_email","order_status","payment_status"]:
         sales[c] = sales[c].astype(str).fillna("").str.strip()
 
     inv_raw = pd.read_excel(inventory_file_path, sheet_name="成品即時庫存", header=3)
     inv_raw.columns = [str(c).strip().replace("\n", "") for c in inv_raw.columns]
     prod_col = next((c for c in inv_raw.columns if "品名" in c), inv_raw.columns[1])
     stock_col = next((c for c in inv_raw.columns if "即期庫存" in c), None)
-
     inventory = inv_raw[[prod_col, stock_col]].copy()
     inventory.columns = ["product_raw", "inventory_qty"]
     inventory["product_raw"] = inventory["product_raw"].astype(str).str.strip()
@@ -55,33 +53,10 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
 
     db.query(SalesRecord).delete()
     db.query(InventoryRecord).delete()
-
     for _, row in sales.iterrows():
-        db.add(SalesRecord(
-            order_date=row["date_str"],
-            raw_product_name=row["product_raw"],
-            normalized_product_name=row["product"],
-            qty=float(row["qty"]),
-            amount=float(row["amount"]),
-            customer_name=row["customer_name"],
-            customer_phone=row["customer_phone"],
-            customer_email=row["customer_email"],
-            order_status=row["order_status"],
-            payment_status=row["payment_status"],
-        ))
-
+        db.add(SalesRecord(order_date=row["date_str"], raw_product_name=row["product_raw"], normalized_product_name=row["product"], qty=float(row["qty"]), amount=float(row["amount"]), customer_name=row["customer_name"], customer_phone=row["customer_phone"], customer_email=row["customer_email"], order_status=row["order_status"], payment_status=row["payment_status"]))
     grouped_inventory = inventory.groupby("product", as_index=False)["inventory_qty"].sum()
     for _, row in grouped_inventory.iterrows():
-        db.add(InventoryRecord(
-            raw_product_name=row["product"],
-            normalized_product_name=row["product"],
-            inventory_qty=float(row["inventory_qty"]),
-        ))
-
-    db.add(UploadBatch(
-        uploaded_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        order_file_name=Path(order_file_path).name,
-        inventory_file_name=Path(inventory_file_path).name,
-        status="success"
-    ))
+        db.add(InventoryRecord(raw_product_name=row["product"], normalized_product_name=row["product"], inventory_qty=float(row["inventory_qty"])))
+    db.add(UploadBatch(uploaded_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"), order_file_name=Path(order_file_path).name, inventory_file_name=Path(inventory_file_path).name, status="success"))
     db.commit()
