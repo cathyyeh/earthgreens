@@ -7,9 +7,10 @@ def is_excluded_sales_product(name: str) -> bool:
     if s in EXCLUDED:
         return True
     patterns = [
-        r"20\d{2}", r"\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b",
-        r"\b(?:q1|q2|q3|q4)\b", r"\d{1,2}[/-]\d{1,2}", r"\d{4}[/-]\d{1,2}",
-        r"\d{4}[/-]\d{1,2}[/-]\d{1,2}", r"(?:1|2|3|4|5|6|7|8|9|10|11|12)\s*月",
+        r"20\d{2}",
+        r"\d{1,2}[/-]\d{1,2}",
+        r"\d{4}[/-]\d{1,2}",
+        r"\d{4}[/-]\d{1,2}[/-]\d{1,2}",
         r"月份", r"期初庫存", r"全年出貨", r"帳上", r"庫存#", r"^#dt$"
     ]
     s_low = s.lower()
@@ -30,12 +31,13 @@ def normalize_product(name: str):
     s = str(name).strip()
     if s == "總計":
         return None
-    if s == "紫蘇。植萃純露":
-        return "紫蘇植萃純露[100ml]"
-    if s == "紫蘇。潔顏液":
-        return "紫蘇潔顏液[100ml]"
-    if s == "紫蘇。潤澤凝露":
-        return "紫蘇潤澤凝露[100ml]"
+    mapping = {
+        "紫蘇。植萃純露": "紫蘇植萃純露[100ml]",
+        "紫蘇。潔顏液": "紫蘇潔顏液[100ml]",
+        "紫蘇。潤澤凝露": "紫蘇潤澤凝露[100ml]",
+    }
+    if s in mapping:
+        return mapping[s]
     if "紫蘇植萃純露" in s:
         return "紫蘇植萃純露[100ml]"
     if "紫蘇潔顏液" in s:

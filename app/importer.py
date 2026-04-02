@@ -36,7 +36,7 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
     sales["product"] = sales["product_raw"].map(normalize_product)
     sales = sales[sales["product"].notna()].copy()
     sales["date_str"] = sales["date"].dt.strftime("%Y-%m-%d")
-    for c in ["customer_name","customer_phone","customer_email","order_status","payment_status"]:
+    for c in ["customer_name", "customer_phone", "customer_email", "order_status", "payment_status"]:
         sales[c] = sales[c].astype(str).fillna("").str.strip()
 
     inv_raw = pd.read_excel(inventory_file_path, sheet_name="成品即時庫存", header=3)
