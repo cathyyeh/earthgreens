@@ -1,14 +1,17 @@
-# Earth Greens Render Deployable v30.1
+# Earth Greens Render Deployable v31
 
-Render-ready package:
+功能與介面維持 v30 熟客分析版。
+
+## 內容
+- 熟客分析
+- 不重複客戶數
+- 前十大客戶
+- 最常購買品項
+- 總貢獻營收
+- 日期 / 品項篩選
+- 報表上傳頁
+- PostgreSQL 支援
+- local SQLite fallback
+- Render 設定檔 render.yaml
 - Python 3.12.8
-- psycopg v3
-- pandas 2.2.2
-- SQLite fallback for local
-- Customer analysis dashboard
-
-Build:
-pip install -r requirements.txt
-
-Start:
-uvicorn app.main:app --host 0.0.0.0 --port 10000
+- pandas 2.1.4
