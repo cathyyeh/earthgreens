@@ -9,12 +9,11 @@
 * { box-sizing:border-box; }
 body { font-family: Arial, sans-serif; max-width: 1320px; margin: 0 auto; padding: 24px; background:var(--bg); color:var(--text); }
 .hero,.panel,.card { background:#fff; border-radius:20px; padding:18px; box-shadow:0 10px 28px rgba(70,55,44,.08); }
-.hero { margin-bottom:18px; position:relative; }
 .quick-actions { position:fixed; top:20px; right:20px; z-index:999; display:flex; gap:10px; }
 .quick-btn { display:inline-block; padding:10px 14px; border-radius:12px; background:#fff; color:#9b5a5a; text-decoration:none; font-weight:700; box-shadow:0 10px 28px rgba(70,55,44,.12); border:1px solid #eadfd6; }
 .filters,.grid { display:grid; gap:16px; }
 .filters { grid-template-columns:1fr 1fr 1fr auto; margin-bottom:18px; }
-.grid { grid-template-columns:repeat(4,1fr); margin-bottom:18px; }
+.grid { grid-template-columns:repeat(5,1fr); margin-bottom:18px; }
 label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
 input,select,button { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--text); }
 button { background:linear-gradient(135deg,var(--brand),#b27373); color:#fff; border:none; cursor:pointer; margin-top:18px; }
@@ -43,7 +42,7 @@ th { background:#faf8f6; position:sticky; top:0; }
   <a href="/admin/upload" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#f8efef;color:#9b5a5a;text-decoration:none;font-weight:600;">前往上傳報表</a>
   <a href="/dashboard" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#f8efef;color:#9b5a5a;text-decoration:none;font-weight:600;">返回 dashboard</a>
 </div>
-<div class="tags"><span class="tag">熟客分析</span><span class="tag">前十大客戶</span><span class="tag">總貢獻營收</span><span class="tag">最常購買品項</span></div>
+<div class="tags"><span class="tag">熟客分析</span><span class="tag">客戶分群</span><span class="tag">每月新客戶數</span><span class="tag">每月回購客戶數</span><span class="tag">回購率</span></div>
 </section>
 
 <form method="get" action="/dashboard" id="filterForm">
@@ -60,13 +59,14 @@ th { background:#faf8f6; position:sticky; top:0; }
   <div class="card"><div class="kpi-title">訂單筆數</div><div class="kpi-value">{{ "{:,.0f}".format(orders) }}</div></div>
   <div class="card"><div class="kpi-title">銷售件數</div><div class="kpi-value">{{ "{:,.0f}".format(qty) }}</div></div>
   <div class="card"><div class="kpi-title">不重複客戶數</div><div class="kpi-value">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
+  <div class="card"><div class="kpi-title">回購率</div><div class="kpi-value">{{ "{:.1f}".format(repurchase_rate) }}%</div></div>
 </div>
 
-<div class="panel" style="margin-bottom:18px;">
-  <h3>熟客分析｜前十大客戶</h3>
-  <div class="scroll"><table><thead><tr><th>客戶</th><th>識別值</th><th>訂單數</th><th>總件數</th><th>總營收</th><th>最常購買品項</th></tr></thead><tbody>{% for c in top_customers %}<tr><td>{{ c.name }}</td><td>{{ c.identifier }}</td><td>{{ "{:,.0f}".format(c.orders) }}</td><td>{{ "{:,.0f}".format(c.qty) }}</td><td>{{ "{:,.0f}".format(c.revenue) }}</td><td>{{ c.favorite_product }}</td></tr>{% endfor %}</tbody></table></div>
-</div>
-
+<div class="panel" style="margin-bottom:18px;"><h3>客戶分群（只買 1 次 / 2–3 次 / 4 次以上）</h3><div class="chartbox"><canvas id="segmentChart"></canvas></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>每月新客戶數</h3><div class="chartbox"><canvas id="newCustomerChart"></canvas></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>每月回購客戶數趨勢</h3><div class="chartbox"><canvas id="repeatCustomerTrendChart"></canvas></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>新客 / 舊客營收占比</h3><div class="chartbox"><canvas id="newRepeatRevenueChart"></canvas></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>熟客分析｜前十大客戶</h3><div class="scroll"><table><thead><tr><th>客戶</th><th>識別值</th><th>訂單數</th><th>總件數</th><th>總營收</th><th>最常購買品項</th></tr></thead><tbody>{% for c in top_customers %}<tr><td>{{ c.name }}</td><td>{{ c.identifier }}</td><td>{{ "{:,.0f}".format(c.orders) }}</td><td>{{ "{:,.0f}".format(c.qty) }}</td><td>{{ "{:,.0f}".format(c.revenue) }}</td><td>{{ c.favorite_product }}</td></tr>{% endfor %}</tbody></table></div></div>
 <div class="panel" style="margin-bottom:18px;"><h3>每日銷售趨勢</h3><div class="chartbox"><canvas id="dailyChart"></canvas></div></div>
 <div class="panel" style="margin-bottom:18px;"><h3>季度銷售分析</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
 <div class="panel" style="margin-bottom:18px;"><h3>季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
@@ -74,6 +74,10 @@ th { background:#faf8f6; position:sticky; top:0; }
 <div class="panel"><h3>銷售 × 庫存彙總</h3><div class="scroll"><table><thead><tr><th>品項</th><th>營收</th><th>銷售件數</th><th>訂單筆數</th><th>庫存量</th></tr></thead><tbody>{% for r in product_rows %}<tr><td>{{ r.product }}</td><td>{{ "{:,.0f}".format(r.amount) }}</td><td>{{ "{:,.0f}".format(r.qty) }}</td><td>{{ "{:,.0f}".format(r.orders) }}</td><td>{{ "{:,.0f}".format(r.inventory_qty) }}</td></tr>{% endfor %}</tbody></table></div></div>
 
 <script>
+new Chart(document.getElementById('segmentChart'), {type:'bar', data:{labels: {{ segment_labels|tojson }}, datasets:[{label:'客戶數', data: {{ segment_values|tojson }}, backgroundColor:'#b27373'}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('newCustomerChart'), {type:'bar', data:{labels: {{ new_customer_month_labels|tojson }}, datasets:[{label:'每月新客戶數', data: {{ new_customer_month_values|tojson }}, backgroundColor:'#c28c8c'}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('repeatCustomerTrendChart'), {type:'line', data:{labels: {{ repeat_customer_month_labels|tojson }}, datasets:[{label:'每月回購客戶數', data: {{ repeat_customer_month_values|tojson }}, borderColor:'#9b5a5a'}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('newRepeatRevenueChart'), {type:'doughnut', data:{labels: {{ new_vs_repeat_labels|tojson }}, datasets:[{label:'營收占比', data: {{ new_vs_repeat_values|tojson }} }]}, options:{responsive:true, maintainAspectRatio:false}});
 new Chart(document.getElementById('dailyChart'), {type:'line', data:{labels: {{ daily_labels|tojson }}, datasets:[{label:'每日營收', data: {{ daily_values|tojson }}, borderColor:'#9b5a5a'}]}, options:{responsive:true, maintainAspectRatio:false}});
 new Chart(document.getElementById('quarterChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度營收', data: {{ quarter_values|tojson }}, backgroundColor:'#b27373'}]}, options:{responsive:true, maintainAspectRatio:false}});
 new Chart(document.getElementById('quarterQtyChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度件數', data: {{ quarter_qty_values|tojson }}, backgroundColor:'#c28c8c'}]}, options:{responsive:true, maintainAspectRatio:false}});

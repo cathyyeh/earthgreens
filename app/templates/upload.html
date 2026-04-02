@@ -14,12 +14,7 @@
 <button type="submit" style="margin-top:20px;padding:10px 16px;background:#a96f6f;color:white;border:none;border-radius:8px;">更新 Dashboard</button>
 </form>
 {% if message %}<div style="margin-top:16px;color:green;">{{ message }}</div>{% endif %}
-{% if latest %}
-<hr>
-<div>最後更新時間：{{ latest.uploaded_at }}</div>
-<div>上次訂單報表：{{ latest.order_file_name }}</div>
-<div>上次庫存報表：{{ latest.inventory_file_name }}</div>
-{% endif %}
+{% if latest %}<hr><div>最後更新時間：{{ latest.uploaded_at }}</div><div>上次訂單報表：{{ latest.order_file_name }}</div><div>上次庫存報表：{{ latest.inventory_file_name }}</div>{% endif %}
 </div>
 </body>
 </html>
