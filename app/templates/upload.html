@@ -4,6 +4,10 @@
 <body style="font-family:Arial;max-width:880px;margin:40px auto;padding:0 20px;background:#f7f4f1;">
 <h1>QDM 報表上傳頁</h1>
 <div style="background:#fff;border:1px solid #ddd;border-radius:12px;padding:24px;">
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+  <a href="/admin/upload" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#f8efef;color:#9b5a5a;text-decoration:none;font-weight:600;">前往上傳報表</a>
+  <a href="/dashboard" style="display:inline-block;padding:10px 14px;border-radius:10px;background:#f8efef;color:#9b5a5a;text-decoration:none;font-weight:600;">返回 dashboard</a>
+</div>
 <form method="post" enctype="multipart/form-data">
 <div>訂單報表</div><input type="file" name="order_file" required>
 <div style="margin-top:12px;">庫存報表</div><input type="file" name="inventory_file" required>
@@ -17,6 +21,5 @@
 <div>上次庫存報表：{{ latest.inventory_file_name }}</div>
 {% endif %}
 </div>
-<p><a href="/dashboard">前往 Dashboard</a></p>
 </body>
 </html>
