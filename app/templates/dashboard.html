@@ -58,28 +58,111 @@ input,select { width:100%; padding:10px 12px; border:1px solid #ddd; border-radi
 
 <div class="two-col">
   <div class="panel"><h3 class="section-title">新客 / 舊客營收占比</h3><div class="chartbox"><canvas id="revenueMixChart"></canvas></div></div>
+  <div class="panel"><h3 class="section-title">舊客回流比</h3><div class="chartbox"><canvas id="returningRatioChart"></canvas></div></div>
+</div>
+
+<div class="two-col">
+  <div class="panel"><h3 class="section-title">前五大熱銷產品｜新舊客佔比（100% Stacked）</h3><div class="subtle" style="margin-bottom:8px;">每支 bar 代表該產品客群結構，總長固定為 100%。</div><div class="chartbox"><canvas id="top5CustomerMixChart"></canvas></div></div>
+  <div class="panel"><h3 class="section-title">前五大熱銷產品｜舊客回流比（水平排序）</h3><div class="subtle" style="margin-bottom:8px;">依產品顯示舊客回流占比，越高代表回購黏著度越強。</div><div class="chartbox"><canvas id="top5ReturningRatioChart"></canvas></div></div>
+</div>
+
+<div class="two-col">
   <div class="panel"><h3 class="section-title">每日銷售趨勢</h3><div class="chartbox"><canvas id="dailyChart"></canvas></div></div>
-</div>
-
-<div class="two-col">
   <div class="panel"><h3 class="section-title">季度銷售分析（含 YoY %）</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
-  <div class="panel"><h3 class="section-title">季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
 </div>
 
 <div class="two-col">
+  <div class="panel"><h3 class="section-title">季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
   <div class="panel"><h3 class="section-title">前十大客戶</h3><table><thead><tr><th>客戶</th><th>識別值</th><th>訂單數</th><th>總件數</th><th>總營收</th><th>最常購買品項</th></tr></thead><tbody>{% for c in top_customers %}<tr><td>{{ c.name }}</td><td>{{ c.identifier }}</td><td>{{ c.orders }}</td><td>{{ "{:,.0f}".format(c.qty) }}</td><td>{{ "{:,.0f}".format(c.revenue) }}</td><td>{{ c.favorite_product }}</td></tr>{% endfor %}</tbody></table></div>
-  <div class="panel"><h3 class="section-title">銷售 × 庫存彙總</h3><table><thead><tr><th>品項</th><th>營收</th><th>銷售件數</th><th>訂單筆數</th><th>庫存量</th></tr></thead><tbody>{% for r in product_rows %}<tr><td>{{ r.product }}</td><td>{{ "{:,.0f}".format(r.amount) }}</td><td>{{ "{:,.0f}".format(r.qty) }}</td><td>{{ "{:,.0f}".format(r.orders) }}</td><td>{{ "{:,.0f}".format(r.inventory_qty) }}</td></tr>{% endfor %}</tbody></table></div>
 </div>
+
+<div class="panel"><h3 class="section-title">銷售 × 庫存彙總</h3><table><thead><tr><th>品項</th><th>營收</th><th>銷售件數</th><th>訂單筆數</th><th>庫存量</th></tr></thead><tbody>{% for r in product_rows %}<tr><td>{{ r.product }}</td><td>{{ "{:,.0f}".format(r.amount) }}</td><td>{{ "{:,.0f}".format(r.qty) }}</td><td>{{ "{:,.0f}".format(r.orders) }}</td><td>{{ "{:,.0f}".format(r.inventory_qty) }}</td></tr>{% endfor %}</tbody></table></div>
 
 <script>
 const barColors = ['#b27373','#c28c8c','#d7aaaa','#8f6a6a','#a96f6f','#c9b2a6','#b68a75','#d4a373'];
 const segLabels = {{ segment_labels|tojson }};
 const segVals = {{ segment_values|tojson }};
 const segTotal = segVals.reduce((a,b)=>a+b,0);
+const revenueMixVals = {{ new_vs_repeat_values|tojson }};
+const revenueMixTotal = revenueMixVals.reduce((a,b)=>a+b,0);
+
 new Chart(document.getElementById('segmentChart'), {type:'pie', data:{labels: segLabels, datasets:[{data: segVals, backgroundColor:['#b27373','#c28c8c','#d7aaaa']}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(ctx){const val=ctx.raw||0; const pct=segTotal?(val/segTotal*100).toFixed(1):'0.0'; return `${ctx.label}: ${val} (${pct}%)`;}}}, legend:{position:'bottom'}}}});
 new Chart(document.getElementById('newCustomerChart'), {type:'bar', data:{labels: {{ new_customer_month_labels|tojson }}, datasets:[{label:'每月新客戶數', data: {{ new_customer_month_values|tojson }}, backgroundColor: {{ new_customer_month_values|tojson }}.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
 new Chart(document.getElementById('repeatCustomerChart'), {type:'bar', data:{labels: {{ repeat_customer_month_labels|tojson }}, datasets:[{label:'每月回購客戶數', data: {{ repeat_customer_month_values|tojson }}, backgroundColor: {{ repeat_customer_month_values|tojson }}.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
-new Chart(document.getElementById('revenueMixChart'), {type:'doughnut', data:{labels: {{ new_vs_repeat_labels|tojson }}, datasets:[{data: {{ new_vs_repeat_values|tojson }}, backgroundColor:['#b27373','#d7aaaa']}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('revenueMixChart'), {type:'doughnut', data:{labels: {{ new_vs_repeat_labels|tojson }}, datasets:[{data: revenueMixVals, backgroundColor:['#b27373','#d7aaaa']}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(ctx){const val=ctx.raw||0; const pct=revenueMixTotal?(val/revenueMixTotal*100).toFixed(1):'0.0'; return `${ctx.label}: ${val.toLocaleString()} (${pct}%)`;}}}, legend:{position:'bottom'}}}});
+new Chart(document.getElementById('returningRatioChart'), {type:'line', data:{labels: {{ returning_ratio_month_labels|tojson }}, datasets:[{label:'舊客回流比 %', data: {{ returning_ratio_month_values|tojson }}, borderColor:'#9b5a5a', tension:0.25}]}, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true, max:100, ticks:{callback:(v)=>v+'%'}}}}});
+const top5Labels = {{ top5_product_labels|tojson }};
+const top5NewCounts = {{ top5_product_new_counts|tojson }};
+const top5RepeatCounts = {{ top5_product_repeat_counts|tojson }};
+const top5MixNewPct = top5NewCounts.map((v, i) => {
+  const total = v + top5RepeatCounts[i];
+  return total ? +(v / total * 100).toFixed(1) : 0;
+});
+const top5MixRepeatPct = top5RepeatCounts.map((v, i) => {
+  const total = v + top5NewCounts[i];
+  return total ? +(v / total * 100).toFixed(1) : 0;
+});
+
+new Chart(document.getElementById('top5CustomerMixChart'), {
+  type:'bar',
+  data:{
+    labels: top5Labels,
+    datasets:[
+      {label:'新客 %', data: top5MixNewPct, backgroundColor:'#d7aaaa'},
+      {label:'舊客 %', data: top5MixRepeatPct, backgroundColor:'#b27373'}
+    ]
+  },
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    indexAxis:'y',
+    scales:{
+      x:{stacked:true, beginAtZero:true, max:100, ticks:{callback:(v)=>v+'%'}},
+      y:{stacked:true}
+    },
+    plugins:{
+      tooltip:{
+        callbacks:{
+          label:function(ctx){
+            return `${ctx.dataset.label}: ${ctx.raw}%`;
+          }
+        }
+      }
+    }
+  }
+});
+
+const top5RatioPairs = top5Labels.map((label, i) => ({label, value: {{ top5_product_returning_ratio|tojson }}[i]}))
+  .sort((a,b)=>b.value-a.value);
+
+new Chart(document.getElementById('top5ReturningRatioChart'), {
+  type:'bar',
+  data:{
+    labels: top5RatioPairs.map(x=>x.label),
+    datasets:[{
+      label:'舊客回流比 %',
+      data: top5RatioPairs.map(x=>x.value),
+      backgroundColor: top5RatioPairs.map((_,i)=>barColors[i%barColors.length])
+    }]
+  },
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    indexAxis:'y',
+    scales:{
+      x:{beginAtZero:true, max:100, ticks:{callback:(v)=>v+'%'}}
+    },
+    plugins:{
+      tooltip:{
+        callbacks:{
+          label:function(ctx){
+            return `${ctx.dataset.label}: ${ctx.raw}%`;
+          }
+        }
+      }
+    }
+  }
+});
 new Chart(document.getElementById('dailyChart'), {type:'line', data:{labels: {{ daily_labels|tojson }}, datasets:[{label:'每日營收', data: {{ daily_values|tojson }}, borderColor:'#9b5a5a'}]}, options:{responsive:true, maintainAspectRatio:false}});
 new Chart(document.getElementById('quarterChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度營收', data: {{ quarter_values|tojson }}, backgroundColor: {{ quarter_values|tojson }}.map((_,i)=>barColors[i%barColors.length])},{label:'YoY %', data: {{ quarter_yoy_values|tojson }}, type:'line', yAxisID:'y1', borderColor:'#7a4f4f', tension:0.2}]}, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}, y1:{position:'right', grid:{drawOnChartArea:false}, ticks:{callback:(v)=>v+'%'}}}, plugins:{tooltip:{callbacks:{label:function(ctx){if(ctx.dataset.label==='YoY %'){return ctx.raw===null?'YoY: N/A':`YoY: ${ctx.raw}%`;} return `${ctx.dataset.label}: ${ctx.raw}`;}}}}}});
 new Chart(document.getElementById('quarterQtyChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度件數', data: {{ quarter_qty_values|tojson }}, backgroundColor: {{ quarter_qty_values|tojson }}.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
