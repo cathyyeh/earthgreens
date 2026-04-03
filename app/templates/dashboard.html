@@ -9,23 +9,38 @@
 body { font-family: Arial, sans-serif; max-width: 1440px; margin: 0 auto; padding: 24px; background:var(--bg); color:var(--text); }
 .hero,.panel,.card { background:#fff; border-radius:20px; padding:18px; box-shadow:0 10px 28px rgba(70,55,44,.08); }
 .hero { margin-bottom:18px; }
+.toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+.btn { display:inline-block; padding:10px 14px; border-radius:10px; background:#f8efef; color:#9b5a5a; text-decoration:none; font-weight:600; border:none; cursor:pointer; }
+.filter-grid { display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:12px; margin:18px 0; }
 .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px; }
 .two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
 .three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:18px; }
-.full { margin-bottom:18px; }
 .chartbox { width:100%; height:340px; }
 table { width:100%; border-collapse:collapse; }
 th,td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:14px; }
 th { background:#faf8f6; }
 .section-title { font-size:20px; margin:0 0 12px 0; }
 .subtle { color:var(--muted); }
-@media (max-width: 1000px) { .kpi-grid,.two-col,.three-col { grid-template-columns:1fr; } }
+input,select { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:10px; background:#fff; }
+@media (max-width: 1000px) { .kpi-grid,.two-col,.three-col,.filter-grid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <section class="hero">
   <h1 style="margin:0 0 8px 0;">春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
   <div class="subtle">最後更新：{{ latest.uploaded_at if latest else "尚未上傳資料" }}</div>
+  <div class="toolbar">
+    <a class="btn" href="/admin/upload">前往上傳報表</a>
+    <a class="btn" href="/dashboard">返回 dashboard</a>
+  </div>
+  <form method="get" action="/dashboard">
+    <div class="filter-grid">
+      <div><div class="subtle">開始日期</div><input type="date" name="start_date" value="{{ selected_start }}"></div>
+      <div><div class="subtle">結束日期</div><input type="date" name="end_date" value="{{ selected_end }}"></div>
+      <div><div class="subtle">品項</div><select name="product"><option value="">全部品項</option>{% for p in all_products %}<option value="{{ p }}" {% if p == selected_product %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
+      <div style="display:flex;align-items:end;"><button class="btn" type="submit">套用篩選</button></div>
+    </div>
+  </form>
 </section>
 
 <div class="kpi-grid">
