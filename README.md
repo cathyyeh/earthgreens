@@ -1,6 +1,5 @@
-# Earth Greens Render Deployable v32.1
+# Earth Greens Render Deployable v32.4
 
-修正：
-- dashboard 加回上傳按鈕
-- 加回日期區間 / 品項篩選
-- 保留 v32 版面
+保留 v32.3 所有功能，並優化：
+- 前五大熱銷產品｜新舊客佔比 → 100% stacked bar
+- 前五大熱銷產品｜舊客回流比 → 水平排序 bar
