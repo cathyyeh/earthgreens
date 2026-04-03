@@ -8,7 +8,7 @@ from .database import Base, engine, get_db
 from .models import SalesRecord, InventoryRecord, UploadBatch
 from .importer import import_files
 Base.metadata.create_all(bind=engine)
-app = FastAPI(title="Earth Greens Dashboard v32")
+app = FastAPI(title="Earth Greens Dashboard v32.1")
 templates = Jinja2Templates(directory="app/templates")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
