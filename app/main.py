@@ -8,7 +8,7 @@ from .database import Base, engine, get_db
 from .models import SalesRecord, InventoryRecord, UploadBatch
 from .importer import import_files
 Base.metadata.create_all(bind=engine)
-app = FastAPI(title="Earth Greens Dashboard v32.1")
+app = FastAPI(title="Earth Greens Dashboard v32.3")
 templates = Jinja2Templates(directory="app/templates")
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -70,6 +70,7 @@ def dashboard(request: Request, start_date: str | None = Query(default=None), en
         prev_val = by_quarter_amount.get(prev, 0)
         curr_val = by_quarter_amount.get(lbl, 0)
         yoy_values.append(round((curr_val-prev_val)/prev_val*100,1) if prev_val > 0 else None)
+
     valid_customer_sales = [s for s in sales if ("完成" in s.order_status or s.order_status == "") and ("付款" in s.payment_status or "已付款" in s.payment_status or s.payment_status == "")]
     customers, first_purchase_month, first_purchase_date = {}, {}, {}
     repeat_customer_by_month = defaultdict(int)
@@ -78,6 +79,7 @@ def dashboard(request: Request, start_date: str | None = Query(default=None), en
     new_customer_revenue = 0.0
     segment_counts = {"只買1次": 0, "2-3次": 0, "4次以上": 0}
     customer_months = defaultdict(set)
+
     for s in valid_customer_sales:
         key = customer_key(s)
         month = s.order_date[:7]
@@ -93,6 +95,22 @@ def dashboard(request: Request, start_date: str | None = Query(default=None), en
         customers[key]["qty"] += s.qty
         customers[key]["revenue"] += s.amount
         customers[key]["products"][s.normalized_product_name] += s.qty
+
+    returning_ratio_by_month = {}
+    month_universe = sorted({s.order_date[:7] for s in valid_customer_sales})
+    for month in month_universe:
+        new_ct = 0
+        repeat_ct = 0
+        for k in customers.keys():
+            months = sorted(customer_months[k])
+            if month in months:
+                if month == first_purchase_month[k]:
+                    new_ct += 1
+                else:
+                    repeat_ct += 1
+        total = new_ct + repeat_ct
+        returning_ratio_by_month[month] = round(repeat_ct / total * 100, 1) if total > 0 else 0.0
+
     for k, c in customers.items():
         new_customer_by_month[first_purchase_month[k]] += 1
         ordered_months = sorted(customer_months[k])
@@ -102,16 +120,77 @@ def dashboard(request: Request, start_date: str | None = Query(default=None), en
         if c["orders"] == 1: segment_counts["只買1次"] += 1
         elif 2 <= c["orders"] <= 3: segment_counts["2-3次"] += 1
         else: segment_counts["4次以上"] += 1
+
     for s in valid_customer_sales:
         key = customer_key(s)
         if s.order_date == first_purchase_date[key]: new_customer_revenue += s.amount
         else: repeat_customer_revenue += s.amount
+
     top_customers = []
     for c in customers.values():
         fav = c["products"].most_common(1)
         top_customers.append({"name": c["name"], "identifier": c["identifier"], "orders": c["orders"], "qty": c["qty"], "revenue": c["revenue"], "favorite_product": fav[0][0] if fav else ""})
     top_customers.sort(key=lambda x: x["revenue"], reverse=True)
     top_customers = top_customers[:10]
+
     product_rows = [{"product": k, **v} for k, v in by_product.items()]
     product_rows.sort(key=lambda x: x["amount"], reverse=True)
-    return templates.TemplateResponse("dashboard.html", {"request": request, "latest": latest, "revenue": revenue, "qty": qty, "orders": orders, "product_rows": product_rows, "all_products": all_products, "daily_labels": list(by_date.keys()), "daily_values": list(by_date.values()), "quarter_labels": quarter_labels, "quarter_values": quarter_values, "quarter_qty_values": quarter_qty_values, "quarter_yoy_values": yoy_values, "segment_labels": list(segment_counts.keys()), "segment_values": list(segment_counts.values()), "new_customer_month_labels": sorted(new_customer_by_month.keys()), "new_customer_month_values": [new_customer_by_month[k] for k in sorted(new_customer_by_month.keys())], "repeat_customer_month_labels": sorted(repeat_customer_by_month.keys()), "repeat_customer_month_values": [repeat_customer_by_month[k] for k in sorted(repeat_customer_by_month.keys())], "new_vs_repeat_labels": ["新客營收", "舊客營收"], "new_vs_repeat_values": [new_customer_revenue, repeat_customer_revenue], "selected_start": start_date or "", "selected_end": end_date or "", "selected_product": product or "", "unique_customer_count": len(customers), "top_customers": top_customers})
+
+    top5_products = [r["product"] for r in product_rows[:5]]
+    prod_new_counts = []
+    prod_repeat_counts = []
+    prod_returning_ratio = []
+
+    for prod in top5_products:
+        prod_sales = [s for s in valid_customer_sales if s.normalized_product_name == prod]
+        new_ct = 0
+        repeat_ct = 0
+        seen_keys = set()
+        for s in prod_sales:
+            k = customer_key(s)
+            if k in seen_keys:
+                continue
+            seen_keys.add(k)
+            if s.order_date == first_purchase_date.get(k):
+                new_ct += 1
+            else:
+                repeat_ct += 1
+        total = new_ct + repeat_ct
+        prod_new_counts.append(new_ct)
+        prod_repeat_counts.append(repeat_ct)
+        prod_returning_ratio.append(round(repeat_ct / total * 100, 1) if total > 0 else 0.0)
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "latest": latest,
+        "revenue": revenue,
+        "qty": qty,
+        "orders": orders,
+        "product_rows": product_rows,
+        "all_products": all_products,
+        "daily_labels": list(by_date.keys()),
+        "daily_values": list(by_date.values()),
+        "quarter_labels": quarter_labels,
+        "quarter_values": quarter_values,
+        "quarter_qty_values": quarter_qty_values,
+        "quarter_yoy_values": yoy_values,
+        "segment_labels": list(segment_counts.keys()),
+        "segment_values": list(segment_counts.values()),
+        "new_customer_month_labels": sorted(new_customer_by_month.keys()),
+        "new_customer_month_values": [new_customer_by_month[k] for k in sorted(new_customer_by_month.keys())],
+        "repeat_customer_month_labels": sorted(repeat_customer_by_month.keys()),
+        "repeat_customer_month_values": [repeat_customer_by_month[k] for k in sorted(repeat_customer_by_month.keys())],
+        "returning_ratio_month_labels": sorted(returning_ratio_by_month.keys()),
+        "returning_ratio_month_values": [returning_ratio_by_month[k] for k in sorted(returning_ratio_by_month.keys())],
+        "new_vs_repeat_labels": ["新客營收", "舊客營收"],
+        "new_vs_repeat_values": [new_customer_revenue, repeat_customer_revenue],
+        "top5_product_labels": top5_products,
+        "top5_product_new_counts": prod_new_counts,
+        "top5_product_repeat_counts": prod_repeat_counts,
+        "top5_product_returning_ratio": prod_returning_ratio,
+        "selected_start": start_date or "",
+        "selected_end": end_date or "",
+        "selected_product": product or "",
+        "unique_customer_count": len(customers),
+        "top_customers": top_customers
+    })
