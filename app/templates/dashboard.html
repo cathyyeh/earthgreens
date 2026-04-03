@@ -5,94 +5,69 @@
 <title>Earth Greens Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial, sans-serif; max-width: 1320px; margin: 0 auto; padding: 24px; background:#f4f0eb; color:#2f241f; }
+:root { --bg:#f4f0eb; --panel:#fff; --text:#2f241f; --muted:#7a6a61; --line:#eadfd6; --brand:#9b5a5a; }
+body { font-family: Arial, sans-serif; max-width: 1440px; margin: 0 auto; padding: 24px; background:var(--bg); color:var(--text); }
 .hero,.panel,.card { background:#fff; border-radius:20px; padding:18px; box-shadow:0 10px 28px rgba(70,55,44,.08); }
-.grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px; }
-.chartbox { width:100%; height:380px; }
+.hero { margin-bottom:18px; }
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px; }
+.two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:18px; }
+.three-col { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:18px; }
+.full { margin-bottom:18px; }
+.chartbox { width:100%; height:340px; }
+table { width:100%; border-collapse:collapse; }
+th,td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left; font-size:14px; }
+th { background:#faf8f6; }
+.section-title { font-size:20px; margin:0 0 12px 0; }
+.subtle { color:var(--muted); }
+@media (max-width: 1000px) { .kpi-grid,.two-col,.three-col { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
 <section class="hero">
-<h1>春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
-<p>最後更新：{{ latest.uploaded_at if latest else "尚未上傳資料" }}</p>
+  <h1 style="margin:0 0 8px 0;">春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
+  <div class="subtle">最後更新：{{ latest.uploaded_at if latest else "尚未上傳資料" }}</div>
 </section>
 
-<div class="grid">
-  <div class="card"><div>營收</div><div style="font-size:30px;font-weight:700;">NT$ {{ "{:,.0f}".format(revenue) }}</div></div>
-  <div class="card"><div>訂單筆數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(orders) }}</div></div>
-  <div class="card"><div>銷售件數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(qty) }}</div></div>
-  <div class="card"><div>不重複客戶數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
+<div class="kpi-grid">
+  <div class="card"><div class="subtle">營收</div><div style="font-size:30px;font-weight:700;">NT$ {{ "{:,.0f}".format(revenue) }}</div></div>
+  <div class="card"><div class="subtle">訂單筆數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(orders) }}</div></div>
+  <div class="card"><div class="subtle">銷售件數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(qty) }}</div></div>
+  <div class="card"><div class="subtle">不重複客戶數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
 </div>
 
-<div class="panel" style="margin-bottom:18px;"><h3>客戶分群（含佔比 %）</h3><div class="chartbox"><canvas id="segmentChart"></canvas></div></div>
-<div class="panel" style="margin-bottom:18px;"><h3>季度銷售分析（含 YoY %）</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
-<div class="panel" style="margin-bottom:18px;"><h3>季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
+<div class="three-col">
+  <div class="panel"><h3 class="section-title">客戶分群</h3><div class="chartbox"><canvas id="segmentChart"></canvas></div></div>
+  <div class="panel"><h3 class="section-title">每月新客戶數</h3><div class="chartbox"><canvas id="newCustomerChart"></canvas></div></div>
+  <div class="panel"><h3 class="section-title">每月回購客戶數</h3><div class="chartbox"><canvas id="repeatCustomerChart"></canvas></div></div>
+</div>
+
+<div class="two-col">
+  <div class="panel"><h3 class="section-title">新客 / 舊客營收占比</h3><div class="chartbox"><canvas id="revenueMixChart"></canvas></div></div>
+  <div class="panel"><h3 class="section-title">每日銷售趨勢</h3><div class="chartbox"><canvas id="dailyChart"></canvas></div></div>
+</div>
+
+<div class="two-col">
+  <div class="panel"><h3 class="section-title">季度銷售分析（含 YoY %）</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
+  <div class="panel"><h3 class="section-title">季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
+</div>
+
+<div class="two-col">
+  <div class="panel"><h3 class="section-title">前十大客戶</h3><table><thead><tr><th>客戶</th><th>識別值</th><th>訂單數</th><th>總件數</th><th>總營收</th><th>最常購買品項</th></tr></thead><tbody>{% for c in top_customers %}<tr><td>{{ c.name }}</td><td>{{ c.identifier }}</td><td>{{ c.orders }}</td><td>{{ "{:,.0f}".format(c.qty) }}</td><td>{{ "{:,.0f}".format(c.revenue) }}</td><td>{{ c.favorite_product }}</td></tr>{% endfor %}</tbody></table></div>
+  <div class="panel"><h3 class="section-title">銷售 × 庫存彙總</h3><table><thead><tr><th>品項</th><th>營收</th><th>銷售件數</th><th>訂單筆數</th><th>庫存量</th></tr></thead><tbody>{% for r in product_rows %}<tr><td>{{ r.product }}</td><td>{{ "{:,.0f}".format(r.amount) }}</td><td>{{ "{:,.0f}".format(r.qty) }}</td><td>{{ "{:,.0f}".format(r.orders) }}</td><td>{{ "{:,.0f}".format(r.inventory_qty) }}</td></tr>{% endfor %}</tbody></table></div>
+</div>
 
 <script>
 const barColors = ['#b27373','#c28c8c','#d7aaaa','#8f6a6a','#a96f6f','#c9b2a6','#b68a75','#d4a373'];
 const segLabels = {{ segment_labels|tojson }};
 const segVals = {{ segment_values|tojson }};
 const segTotal = segVals.reduce((a,b)=>a+b,0);
-const quarterLabels = {{ quarter_labels|tojson }};
-const quarterValues = {{ quarter_values|tojson }};
-const quarterQtyValues = {{ quarter_qty_values|tojson }};
-const quarterYoyValues = {{ quarter_yoy_values|tojson }};
-
-new Chart(document.getElementById('segmentChart'), {
-  type:'pie',
-  data:{labels: segLabels, datasets:[{data: segVals, backgroundColor:['#b27373','#c28c8c','#d7aaaa']}]},
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    plugins:{
-      tooltip:{
-        callbacks:{
-          label:function(ctx){
-            const val = ctx.raw || 0;
-            const pct = segTotal ? (val/segTotal*100).toFixed(1) : '0.0';
-            return `${ctx.label}: ${val} (${pct}%)`;
-          }
-        }
-      },
-      legend:{position:'bottom'}
-    }
-  }
-});
-
-new Chart(document.getElementById('quarterChart'), {
-  type:'bar',
-  data:{
-    labels: quarterLabels,
-    datasets:[
-      {label:'季度營收', data: quarterValues, backgroundColor: quarterValues.map((_,i)=>barColors[i%barColors.length])},
-      {label:'YoY %', data: quarterYoyValues, type:'line', yAxisID:'y1', borderColor:'#7a4f4f', tension:0.2}
-    ]
-  },
-  options:{
-    responsive:true, maintainAspectRatio:false,
-    scales:{
-      y:{beginAtZero:true},
-      y1:{beginAtZero:false, position:'right', grid:{drawOnChartArea:false}, ticks:{callback:(v)=>v+'%'}}
-    },
-    plugins:{
-      tooltip:{
-        callbacks:{
-          label:function(ctx){
-            if (ctx.dataset.label === 'YoY %') {
-              return ctx.raw === null ? 'YoY: N/A' : `YoY: ${ctx.raw}%`;
-            }
-            return `${ctx.dataset.label}: ${ctx.raw}`;
-          }
-        }
-      }
-    }
-  }
-});
-
-new Chart(document.getElementById('quarterQtyChart'), {
-  type:'bar',
-  data:{labels: quarterLabels, datasets:[{label:'季度件數', data: quarterQtyValues, backgroundColor: quarterQtyValues.map((_,i)=>barColors[i%barColors.length])}]},
-  options:{responsive:true, maintainAspectRatio:false}
-});
+new Chart(document.getElementById('segmentChart'), {type:'pie', data:{labels: segLabels, datasets:[{data: segVals, backgroundColor:['#b27373','#c28c8c','#d7aaaa']}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{tooltip:{callbacks:{label:function(ctx){const val=ctx.raw||0; const pct=segTotal?(val/segTotal*100).toFixed(1):'0.0'; return `${ctx.label}: ${val} (${pct}%)`;}}}, legend:{position:'bottom'}}}});
+new Chart(document.getElementById('newCustomerChart'), {type:'bar', data:{labels: {{ new_customer_month_labels|tojson }}, datasets:[{label:'每月新客戶數', data: {{ new_customer_month_values|tojson }}, backgroundColor: {{ new_customer_month_values|tojson }}.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('repeatCustomerChart'), {type:'bar', data:{labels: {{ repeat_customer_month_labels|tojson }}, datasets:[{label:'每月回購客戶數', data: {{ repeat_customer_month_values|tojson }}, backgroundColor: {{ repeat_customer_month_values|tojson }}.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('revenueMixChart'), {type:'doughnut', data:{labels: {{ new_vs_repeat_labels|tojson }}, datasets:[{data: {{ new_vs_repeat_values|tojson }}, backgroundColor:['#b27373','#d7aaaa']}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('dailyChart'), {type:'line', data:{labels: {{ daily_labels|tojson }}, datasets:[{label:'每日營收', data: {{ daily_values|tojson }}, borderColor:'#9b5a5a'}]}, options:{responsive:true, maintainAspectRatio:false}});
+new Chart(document.getElementById('quarterChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度營收', data: {{ quarter_values|tojson }}, backgroundColor: {{ quarter_values|tojson }}.map((_,i)=>barColors[i%barColors.length])},{label:'YoY %', data: {{ quarter_yoy_values|tojson }}, type:'line', yAxisID:'y1', borderColor:'#7a4f4f', tension:0.2}]}, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}, y1:{position:'right', grid:{drawOnChartArea:false}, ticks:{callback:(v)=>v+'%'}}}, plugins:{tooltip:{callbacks:{label:function(ctx){if(ctx.dataset.label==='YoY %'){return ctx.raw===null?'YoY: N/A':`YoY: ${ctx.raw}%`;} return `${ctx.dataset.label}: ${ctx.raw}`;}}}}}});
+new Chart(document.getElementById('quarterQtyChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度件數', data: {{ quarter_qty_values|tojson }}, backgroundColor: {{ quarter_qty_values|tojson }}.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
 </script>
 </body>
 </html>
