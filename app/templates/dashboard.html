@@ -5,67 +5,94 @@
 <title>Earth Greens Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-:root { --bg:#f4f0eb; --panel:#fff; --text:#2f241f; --muted:#7a6a61; --line:#d9cfc6; --brand:#9b5a5a; }
-* { box-sizing:border-box; }
-body { font-family: Arial, sans-serif; max-width: 1320px; margin: 0 auto; padding: 24px; background:var(--bg); color:var(--text); }
+body { font-family: Arial, sans-serif; max-width: 1320px; margin: 0 auto; padding: 24px; background:#f4f0eb; color:#2f241f; }
 .hero,.panel,.card { background:#fff; border-radius:20px; padding:18px; box-shadow:0 10px 28px rgba(70,55,44,.08); }
-.quick-actions { position:fixed; top:20px; right:20px; z-index:999; display:flex; gap:10px; }
-.quick-btn { display:inline-block; padding:10px 14px; border-radius:12px; background:#fff; color:#9b5a5a; text-decoration:none; font-weight:700; box-shadow:0 10px 28px rgba(70,55,44,.12); border:1px solid #eadfd6; }
-.filters,.grid { display:grid; gap:16px; }
-.filters { grid-template-columns:1fr 1fr 1fr auto; margin-bottom:18px; }
-.grid { grid-template-columns:repeat(5,1fr); margin-bottom:18px; }
-label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-input,select,button { width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:12px; background:#fff; color:var(--text); }
-button { background:linear-gradient(135deg,var(--brand),#b27373); color:#fff; border:none; cursor:pointer; margin-top:18px; }
-.kpi-title { color:var(--muted); font-size:13px; margin-bottom:10px; }
-.kpi-value { font-size:30px; font-weight:700; }
-.tags { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
-.tag { padding:8px 12px; border-radius:999px; background:#f8efef; color:#9b5a5a; font-size:13px; font-weight:600; }
-.chartbox { width:100%; height:360px; }
-table { width:100%; border-collapse: collapse; }
-th, td { padding:10px 8px; border-bottom:1px solid #eadfd6; text-align:left; font-size:14px; }
-th { background:#faf8f6; position:sticky; top:0; }
-.scroll { max-height:420px; overflow:auto; }
+.grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:18px; }
+.chartbox { width:100%; height:380px; }
 </style>
 </head>
 <body>
-<div class="quick-actions">
-  <a class="quick-btn" href="/admin/upload">上傳報表</a>
-  <a class="quick-btn" href="/dashboard">返回 dashboard</a>
-</div>
 <section class="hero">
 <h1>春綠 Earth Greens｜內部銷售與庫存儀表板</h1>
 <p>最後更新：{{ latest.uploaded_at if latest else "尚未上傳資料" }}</p>
-<div class="tags"><span class="tag">客戶分群</span><span class="tag">多色柱狀圖</span></div>
 </section>
-<form method="get" action="/dashboard" id="filterForm">
-<div class="filters">
-  <div><label>開始日期</label><input type="date" name="start_date" id="start_date" value="{{ selected_start }}"></div>
-  <div><label>結束日期</label><input type="date" name="end_date" id="end_date" value="{{ selected_end }}"></div>
-  <div><label>品項</label><select name="product" id="product"><option value="">全部品項</option>{% for p in all_products %}<option value="{{ p }}" {% if p == selected_product %}selected{% endif %}>{{ p }}</option>{% endfor %}</select></div>
-  <div><button type="submit">套用篩選</button></div>
-</div>
-</form>
+
 <div class="grid">
-  <div class="card"><div class="kpi-title">營收</div><div class="kpi-value">NT$ {{ "{:,.0f}".format(revenue) }}</div></div>
-  <div class="card"><div class="kpi-title">訂單筆數</div><div class="kpi-value">{{ "{:,.0f}".format(orders) }}</div></div>
-  <div class="card"><div class="kpi-title">銷售件數</div><div class="kpi-value">{{ "{:,.0f}".format(qty) }}</div></div>
-  <div class="card"><div class="kpi-title">不重複客戶數</div><div class="kpi-value">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
-  <div class="card"><div class="kpi-title">回購率</div><div class="kpi-value">{{ "{:.1f}".format(repurchase_rate) }}%</div></div>
+  <div class="card"><div>營收</div><div style="font-size:30px;font-weight:700;">NT$ {{ "{:,.0f}".format(revenue) }}</div></div>
+  <div class="card"><div>訂單筆數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(orders) }}</div></div>
+  <div class="card"><div>銷售件數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(qty) }}</div></div>
+  <div class="card"><div>不重複客戶數</div><div style="font-size:30px;font-weight:700;">{{ "{:,.0f}".format(unique_customer_count) }}</div></div>
 </div>
-<div class="panel" style="margin-bottom:18px;"><h3>客戶分群（只買 1 次 / 2–3 次 / 4 次以上）</h3><div class="chartbox"><canvas id="segmentChart"></canvas></div></div>
-<div class="panel" style="margin-bottom:18px;"><h3>每月新客戶數</h3><div class="chartbox"><canvas id="newCustomerChart"></canvas></div></div>
-<div class="panel" style="margin-bottom:18px;"><h3>季度銷售分析</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
+
+<div class="panel" style="margin-bottom:18px;"><h3>客戶分群（含佔比 %）</h3><div class="chartbox"><canvas id="segmentChart"></canvas></div></div>
+<div class="panel" style="margin-bottom:18px;"><h3>季度銷售分析（含 YoY %）</h3><div class="chartbox"><canvas id="quarterChart"></canvas></div></div>
 <div class="panel" style="margin-bottom:18px;"><h3>季度銷售件數</h3><div class="chartbox"><canvas id="quarterQtyChart"></canvas></div></div>
+
 <script>
 const barColors = ['#b27373','#c28c8c','#d7aaaa','#8f6a6a','#a96f6f','#c9b2a6','#b68a75','#d4a373'];
-const newVals = {{ new_customer_month_values|tojson }};
-const qVals = {{ quarter_values|tojson }};
-const qqVals = {{ quarter_qty_values|tojson }};
-new Chart(document.getElementById('segmentChart'), {type:'pie', data:{labels: {{ segment_labels|tojson }}, datasets:[{data: {{ segment_values|tojson }}, backgroundColor:['#b27373','#c28c8c','#d7aaaa']}]}, options:{responsive:true, maintainAspectRatio:false}});
-new Chart(document.getElementById('newCustomerChart'), {type:'bar', data:{labels: {{ new_customer_month_labels|tojson }}, datasets:[{label:'每月新客戶數', data:newVals, backgroundColor:newVals.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
-new Chart(document.getElementById('quarterChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度營收', data:qVals, backgroundColor:qVals.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
-new Chart(document.getElementById('quarterQtyChart'), {type:'bar', data:{labels: {{ quarter_labels|tojson }}, datasets:[{label:'季度件數', data:qqVals, backgroundColor:qqVals.map((_,i)=>barColors[i%barColors.length])}]}, options:{responsive:true, maintainAspectRatio:false}});
+const segLabels = {{ segment_labels|tojson }};
+const segVals = {{ segment_values|tojson }};
+const segTotal = segVals.reduce((a,b)=>a+b,0);
+const quarterLabels = {{ quarter_labels|tojson }};
+const quarterValues = {{ quarter_values|tojson }};
+const quarterQtyValues = {{ quarter_qty_values|tojson }};
+const quarterYoyValues = {{ quarter_yoy_values|tojson }};
+
+new Chart(document.getElementById('segmentChart'), {
+  type:'pie',
+  data:{labels: segLabels, datasets:[{data: segVals, backgroundColor:['#b27373','#c28c8c','#d7aaaa']}]},
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      tooltip:{
+        callbacks:{
+          label:function(ctx){
+            const val = ctx.raw || 0;
+            const pct = segTotal ? (val/segTotal*100).toFixed(1) : '0.0';
+            return `${ctx.label}: ${val} (${pct}%)`;
+          }
+        }
+      },
+      legend:{position:'bottom'}
+    }
+  }
+});
+
+new Chart(document.getElementById('quarterChart'), {
+  type:'bar',
+  data:{
+    labels: quarterLabels,
+    datasets:[
+      {label:'季度營收', data: quarterValues, backgroundColor: quarterValues.map((_,i)=>barColors[i%barColors.length])},
+      {label:'YoY %', data: quarterYoyValues, type:'line', yAxisID:'y1', borderColor:'#7a4f4f', tension:0.2}
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    scales:{
+      y:{beginAtZero:true},
+      y1:{beginAtZero:false, position:'right', grid:{drawOnChartArea:false}, ticks:{callback:(v)=>v+'%'}}
+    },
+    plugins:{
+      tooltip:{
+        callbacks:{
+          label:function(ctx){
+            if (ctx.dataset.label === 'YoY %') {
+              return ctx.raw === null ? 'YoY: N/A' : `YoY: ${ctx.raw}%`;
+            }
+            return `${ctx.dataset.label}: ${ctx.raw}`;
+          }
+        }
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('quarterQtyChart'), {
+  type:'bar',
+  data:{labels: quarterLabels, datasets:[{label:'季度件數', data: quarterQtyValues, backgroundColor: quarterQtyValues.map((_,i)=>barColors[i%barColors.length])}]},
+  options:{responsive:true, maintainAspectRatio:false}
+});
 </script>
 </body>
 </html>
