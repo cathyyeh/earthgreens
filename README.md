@@ -1,5 +1,7 @@
-# Earth Greens Render Deployable v31.7
+# Earth Greens Render Deployable v32
 
-新增圖表顯示調整：
-- 客戶分群 pie chart 顯示百分比
-- 季度銷售分析顯示去年同季 YoY growth %
+版面優化版：
+- KPI 在第一排
+- 客戶分析在第二排
+- 銷售趨勢在第三排
+- 表格集中在底部
