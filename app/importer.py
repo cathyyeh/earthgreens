@@ -3,12 +3,14 @@ from datetime import datetime
 import pandas as pd
 from .normalizer import normalize_product, is_excluded_sales_product, is_excluded_inventory_product
 from .models import SalesRecord, InventoryRecord, UploadBatch
+
 def find_col(cols, candidates):
     for cand in candidates:
         for c in cols:
             if cand in str(c).lower():
                 return c
     return None
+
 def import_files(db, order_file_path: str, inventory_file_path: str):
     sales_raw = pd.read_excel(order_file_path)
     sales_raw.columns = [str(c).strip() for c in sales_raw.columns]
@@ -34,6 +36,7 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
     sales["date_str"] = sales["date"].dt.strftime("%Y-%m-%d")
     for c in ["customer_name","customer_phone","customer_email","order_status","payment_status"]:
         sales[c] = sales[c].astype(str).fillna("").str.strip()
+
     inv_raw = pd.read_excel(inventory_file_path, sheet_name="成品即時庫存", header=3)
     inv_raw.columns = [str(c).strip().replace("\n", "") for c in inv_raw.columns]
     prod_col = next((c for c in inv_raw.columns if "品名" in c), inv_raw.columns[1])
@@ -46,6 +49,7 @@ def import_files(db, order_file_path: str, inventory_file_path: str):
     inventory["inventory_qty"] = pd.to_numeric(inventory["inventory_qty"], errors="coerce").fillna(0)
     inventory["product"] = inventory["product_raw"].map(normalize_product)
     inventory = inventory[inventory["product"].notna()].copy()
+
     db.query(SalesRecord).delete()
     db.query(InventoryRecord).delete()
     for _, row in sales.iterrows():
